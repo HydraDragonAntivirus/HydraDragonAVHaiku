@@ -8,6 +8,9 @@
 #include <Window.h>
 #include <string>
 #include <set>
+#include <Path.h>
+#include <Message.h>
+#include <String.h>
 
 class MainWindow : public BWindow
 {
@@ -21,6 +24,10 @@ public:
     void MonitorDesktop();
     void CheckFilesInDirectory(const std::string& directory, std::set<std::string>& processedFiles);
     void InstallClamAV(); // Function to install ClamAV
+    void ChangeMonitorDirectory();
+    BString monitoringDirectory; // Member variable to store the monitoring directory
+    
+    static const uint32 kMsgChangeMonitorDirectory = 'chmd'; // New message constant for changing directory
 
 private:
 			BMenuBar*		_BuildMenu();
