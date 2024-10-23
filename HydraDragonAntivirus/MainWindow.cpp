@@ -41,6 +41,9 @@ MainWindow::MainWindow()
     : BWindow(BRect(100, 100, 500, 400), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
+    // Initialize the file panel, set it to select directories
+    filePanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
+
     CreateConfigDirectory(); // Create the config directory
 
     BMenuBar* menuBar = _BuildMenu();
@@ -77,6 +80,7 @@ MainWindow::MainWindow()
 MainWindow::~MainWindow()
 {
     _SaveSettings();
+    delete filePanel;  // Clean up the file panel
 }
 
 BMenuBar* MainWindow::_BuildMenu()
@@ -167,14 +171,14 @@ void MainWindow::CreateConfigDirectory() {
 }
 
 void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
-    // Update the configuration file to reflect the new directory using B_USER_SETTINGS_DIRECTORY
+    // Get the path to the user settings directory
     BPath configPath;
     if (find_directory(B_USER_SETTINGS_DIRECTORY, &configPath) != B_OK) {
         std::cerr << "Error finding user settings directory" << std::endl;
         return;
     }
 
-    // Append HydraDragonAntivirus folder and config file name
+    // Append the application-specific folder and config file name
     configPath.Append("HydraDragonAntivirus");
     configPath.Append("config.txt");
 
@@ -195,14 +199,27 @@ void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
     }
 }
 
-void ChangeMonitorDirectory(BPath selectedPath) {
-    BAlert *alert = new BAlert("Directory Changed",
-                               "The monitoring directory has been updated.",
-                               "OK", NULL, NULL, B_WIDTH_AS_USUAL, B_INFO_ALERT);
-    alert->Go();
+void MainWindow::ChangeMonitorDirectory()
+{
+    // Open the file panel to allow the user to select a directory
+    filePanel->Show();
+}
 
-    // Call the UpdateConfigFile function (now under MainWindow)
-    UpdateConfigFile(selectedPath);
+void MainWindow::RefsReceived(BMessage* message)
+{
+    entry_ref ref;
+    if (message->FindRef("refs", &ref) == B_OK) {
+        BPath path(&ref);
+        
+        // Call UpdateConfigFile with the selected path
+        UpdateConfigFile(path);
+
+        // Show an alert to confirm the directory change
+        BAlert* alert = new BAlert("Directory Changed",
+                                   "The monitoring directory has been updated.",
+                                   "OK", NULL, NULL, B_WIDTH_AS_USUAL, B_INFO_ALERT);
+        alert->Go();
+    }
 }
 
 void MainWindow::InstallClamAV() {
@@ -330,46 +347,50 @@ void MainWindow::MonitorDesktop()
     }
 }
 
-status_t MainWindow::_LoadSettings(BMessage& settings) 
+status_t
+MainWindow::_LoadSettings(BMessage& settings)
 {
-    BPath path;
-    status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &path);
-    if (status != B_OK)
-        return status; // Ensure early return on failure
+	BPath path;
+	status_t status;
+	status = find_directory(B_USER_SETTINGS_DIRECTORY, &path);
+	if (status != B_OK)
+		return status;
 
-    status = path.Append(kSettingsFile);
-    if (status != B_OK)
-        return status; // Handle potential error in appending
+	status = path.Append(kSettingsFile);
+	if (status != B_OK)
+		return status;
 
-    BFile file;
-    status = file.SetTo(path.Path(), B_READ_ONLY);
-    if (status != B_OK)
-        return status; // Error handling for file access
+	BFile file;
+	status = file.SetTo(path.Path(), B_READ_ONLY);
+	if (status != B_OK)
+		return status;
 
-    return settings.Unflatten(&file); // Unflatten settings from file
+	return settings.Unflatten(&file);
 }
 
-status_t MainWindow::_SaveSettings() 
+
+status_t
+MainWindow::_SaveSettings()
 {
-    BPath path;
-    status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &path);
-    if (status != B_OK)
-        return status; // Early exit on failure
+	BPath path;
+	status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &path);
+	if (status != B_OK)
+		return status;
 
-    status = path.Append(kSettingsFile);
-    if (status != B_OK)
-        return status; // Error in appending path
+	status = path.Append(kSettingsFile);
+	if (status != B_OK)
+		return status;
 
-    BFile file;
-    status = file.SetTo(path.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
-    if (status != B_OK)
-        return status; // Handle potential file access error
+	BFile file;
+	status = file.SetTo(path.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
+	if (status != B_OK)
+		return status;
 
-    BMessage settings;
-    status = settings.AddRect("main_window_rect", Frame()); // Add window frame rect to settings
+	BMessage settings;
+	status = settings.AddRect("main_window_rect", Frame());
 
-    if (status == B_OK)
-        status = settings.Flatten(&file); // Flatten settings to file
+	if (status == B_OK)
+		status = settings.Flatten(&file);
 
-    return status; // Return the status of the flatten operation
+	return status;
 }
