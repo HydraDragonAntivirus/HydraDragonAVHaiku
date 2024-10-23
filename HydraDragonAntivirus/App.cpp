@@ -29,7 +29,7 @@ App::AboutRequested()
 {
 	BAboutWindow* about
 		= new BAboutWindow(B_TRANSLATE_SYSTEM_NAME("HydraDragonAntivirus"), kApplicationSignature);
-	about->AddDescription(B_TRANSLATE("Detect and prevent ransomware detection"));
+	about->AddDescription(B_TRANSLATE("Detect and prevent malware"));
 	about->AddCopyright(2024, "Emirhan Ucan");
 	about->Show();
 }

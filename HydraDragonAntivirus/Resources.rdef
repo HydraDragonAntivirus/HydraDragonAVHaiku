@@ -13,8 +13,8 @@ resource app_version {
 
 	internal = 0,
 
-	short_info = "Ransomware infection detection",
-	long_info  = "A program to detect and prevent ransomware infection through file extensions"
+	short_info = "Hydra Dragon Antivirus",
+	long_info  = "A program to detect and prevent malware infections"
 };
 
 resource vector_icon {
