@@ -153,11 +153,11 @@ void MainWindow::CreateConfigDirectory() {
     // Append HydraDragonAntivirus directory name
     configPath.Append("HydraDragonAntivirus");
 
+    // Ensure the parent directory exists
     BDirectory configDir(configPath.Path());
     if (configDir.InitCheck() != B_OK) {
-        // Create the directory if it doesn't exist
-        if (mkdir(configPath.Path(), 0755) != 0 && errno != EEXIST) {
-            std::cerr << "Error creating config directory: " << strerror(errno) << std::endl;
+        if (create_directory(configPath.Path(), 0755) != B_OK) {
+            std::cerr << "Error creating config directory: " << configPath.Path() << std::endl;
         } else {
             std::cout << "Config directory created: " << configPath.Path() << std::endl;
         }
@@ -168,13 +168,19 @@ void MainWindow::CreateConfigDirectory() {
 
 void MainWindow::UpdateConfigFile(const std::string& selectedDirectory) {
     BPath configPath;
-    find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
-    configPath.Append("HydraDragonAntivirus");
-    configPath.Append("config.txt"); // or any specific config file name
+    if (find_directory(B_USER_SETTINGS_DIRECTORY, &configPath) != B_OK) {
+        std::cerr << "Error finding user settings directory" << std::endl;
+        return;
+    }
 
+    // Append HydraDragonAntivirus folder and config file name
+    configPath.Append("HydraDragonAntivirus");
+    configPath.Append("config.txt");
+
+    // Open the file for writing
     BFile configFile(configPath.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
     if (configFile.InitCheck() != B_OK) {
-        std::cerr << "Error opening config file for writing" << std::endl;
+        std::cerr << "Error opening config file for writing: " << configPath.Path() << std::endl;
         return;
     }
 
