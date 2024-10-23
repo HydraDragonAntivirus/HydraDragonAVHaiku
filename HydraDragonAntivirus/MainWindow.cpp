@@ -120,7 +120,18 @@ BMenuBar* MainWindow::_BuildMenu()
 void MainWindow::InstallClamAV()
 {
     printf("Installing ClamAV...\n");
-    system("pkgman install -y clamav"); // Execute the install command
+    
+    // Install ClamAV
+    system("pkgman install -y clamav");
+
+    // Copy the freshclam.conf file
+    system("cp clamavconfig/freshclam.conf /boot/system/settings/clamav/");
+
+    // Copy the db directory
+    system("cp -r db /boot/system/settings/clamav/db");
+
+    // Run freshclam
+    system("freshclam");
 }
 
 void MainWindow::StartMonitoring()
