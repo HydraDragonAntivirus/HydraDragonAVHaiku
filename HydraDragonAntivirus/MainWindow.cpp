@@ -53,15 +53,31 @@ MainWindow::MainWindow()
     BMessage settings;
     _LoadSettings(settings);
 
-    // Load the default monitoring directory from settings
-    const char* defaultMonitorDir = nullptr;
-    if (settings.FindString("monitor_directory", &defaultMonitorDir) == B_OK) {
-        monitoringDirectory = defaultMonitorDir; // Store the selected directory
+    // Check for the config directory and read the monitor_directory.conf
+    BPath configPath;
+    find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
+    configPath.Append("config/monitor_directory.conf");
+
+    BFile configFile;
+    if (configFile.SetTo(configPath.Path(), B_READ_ONLY) == B_OK) {
+        char pathBuffer[MAX_PATH_LENGTH];
+        ssize_t bytesRead = configFile.Read(pathBuffer, sizeof(pathBuffer) - 1);
+        if (bytesRead > 0) {
+            pathBuffer[bytesRead] = '\0'; // Null-terminate the string
+            monitoringDirectory = pathBuffer; // Set to the value read from the config
+        }
+        configFile.Unset(); // Close the file
     } else {
-        // If not found, default to the Desktop path
-        BPath desktopPath;
-        find_directory(B_DESKTOP_DIRECTORY, &desktopPath);
-        monitoringDirectory = desktopPath.Path(); // Set to Desktop
+        // Fallback to the default monitor directory if config file doesn't exist
+        const char* defaultMonitorDir = nullptr;
+        if (settings.FindString("monitor_directory", &defaultMonitorDir) == B_OK) {
+            monitoringDirectory = defaultMonitorDir; // Store the selected directory
+        } else {
+            // If not found, default to the Desktop path
+            BPath desktopPath;
+            find_directory(B_DESKTOP_DIRECTORY, &desktopPath);
+            monitoringDirectory = desktopPath.Path(); // Set to Desktop
+        }
     }
 
     BRect frame;
@@ -158,13 +174,23 @@ void MainWindow::RefsReceived(BMessage* message)
         BPath path(&ref);
         if (path.InitCheck() == B_OK) {
             monitoringDirectory = path.Path(); // Update the monitoring directory
-            printf("Monitoring directory changed to: %s\n", monitoringDirectory.String()); // Use String() instead of c_str()
+            printf("Monitoring directory changed to: %s\n", monitoringDirectory.String());
 
-            // Save the new directory to settings
-            BMessage settings;
-            _LoadSettings(settings);
-            settings.ReplaceString("monitor_directory", monitoringDirectory.String()); // Use String() here too
-            _SaveSettings(); // Save updated settings
+            // Save the new directory to the configuration file
+            BPath configPath;
+            if (find_directory(B_USER_SETTINGS_DIRECTORY, &configPath) == B_OK) {
+                configPath.Append("config/monitor_directory.conf"); // Adjust path as needed
+
+                // Create config directory if it doesn't exist
+                mkdir(configPath.Path(), 0755); // Create the directory if it doesn't exist
+
+                // Write the new monitoring directory to the file
+                std::ofstream configFile(configPath.Path(), std::ios::out | std::ios::trunc);
+                if (configFile.is_open()) {
+                    configFile << monitoringDirectory.String(); // Write the directory path
+                    configFile.close();
+                }
+            }
         }
     }
 }
