@@ -19,6 +19,7 @@ public:
 	virtual					~MainWindow();
 
 	virtual void			MessageReceived(BMessage* msg);
+    virtual void            RefsReceived(BMessage* message);
 
     void StartMonitoring();
     void MonitorDesktop();

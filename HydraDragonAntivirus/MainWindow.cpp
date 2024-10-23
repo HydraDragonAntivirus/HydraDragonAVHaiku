@@ -20,6 +20,7 @@
 #include <fstream> // For file handling
 #include <thread>
 #include <FilePanel.h> // Include this for file dialogs
+#include <Alert.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -156,12 +157,12 @@ void MainWindow::RefsReceived(BMessage* message)
         BPath path(&ref);
         if (path.InitCheck() == B_OK) {
             monitoringDirectory = path.Path(); // Update the monitoring directory
-            printf("Monitoring directory changed to: %s\n", monitoringDirectory.c_str());
+            printf("Monitoring directory changed to: %s\n", monitoringDirectory.String()); // Use String() instead of c_str()
 
             // Save the new directory to settings
             BMessage settings;
             _LoadSettings(settings);
-            settings.ReplaceString("monitor_directory", monitoringDirectory.c_str());
+            settings.ReplaceString("monitor_directory", monitoringDirectory.String()); // Use String() here too
             _SaveSettings(); // Save updated settings
         }
     }
