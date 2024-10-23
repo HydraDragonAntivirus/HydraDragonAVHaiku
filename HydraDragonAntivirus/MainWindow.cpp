@@ -18,6 +18,7 @@
 #include <set>
 #include <fstream> // For file handling
 #include <thread>
+#include <FilePanel.h> // Include this for file dialogs
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -26,6 +27,7 @@
 static const uint32 kMsgStartMonitor = 'strt';
 static const uint32 kMsgQuitApp = 'quit';
 static const uint32 kMsgInstallClamAV = 'inst';
+static const uint32 kMsgChangeMonitorDirectory = 'chmd';
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -117,21 +119,26 @@ BMenuBar* MainWindow::_BuildMenu()
     return menuBar;
 }
 
-void MainWindow::InstallClamAV()
-{
+void MainWindow::InstallClamAV() {
     printf("Installing ClamAV...\n");
-    
-    // Install ClamAV
-    system("pkgman install -y clamav");
 
-    // Copy the freshclam.conf file
-    system("cp clamavconfig/freshclam.conf /boot/system/settings/clamav/");
+    // Install ClamAV without confirmation
+    system("pkgman install -y clamav"); 
 
-    // Copy the db directory
-    system("cp -r db /boot/system/settings/clamav/db");
+    // Copy clamavconfig/freshclam.conf to /boot/system/settings/clamav/
+    system("cp -f clamavconfig/freshclam.conf /boot/system/settings/clamav/");
 
-    // Run freshclam
+    // Copy the db folder to the ClamAV settings directory
+    system("cp -rf db /boot/system/settings/clamav/db");
+
+    // Run freshclam to update the virus definitions
     system("freshclam");
+
+    // Show a message box at the end of the process
+    BAlert* alert = new BAlert("ClamAV Installation", 
+                               "ClamAV installation and setup completed successfully.", 
+                               "OK");
+    alert->Go();  // Display the message box
 }
 
 void MainWindow::StartMonitoring()
