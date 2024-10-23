@@ -1,3 +1,5 @@
+#include "knownExtensions.h"
+
 #include <vector>
 #include <string>
 
