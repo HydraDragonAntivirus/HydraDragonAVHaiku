@@ -21,11 +21,14 @@ public:
 	virtual void			MessageReceived(BMessage* msg);
     virtual void            RefsReceived(BMessage* message);
 
+    // Function declarations
     void StartMonitoring();
     void MonitorDesktop();
     void CheckFilesInDirectory(const std::string& directory, std::set<std::string>& processedFiles);
     void InstallClamAV(); // Function to install ClamAV
     void ChangeMonitorDirectory();
+    void CreateConfigDirectory();
+    void UpdateConfigFile(const std::string& selectedDirectory);
     BString monitoringDirectory; // Member variable to store the monitoring directory
     
     static const uint32 kMsgChangeMonitorDirectory = 'chmd'; // New message constant for changing directory
