@@ -28,7 +28,6 @@ public:
     void ChangeMonitorDirectory();
     void CreateConfigDirectory();
     void UpdateConfigFile(const BPath& selectedPath);
-    void ChangeMonitorDirectory(BPath selectedPath);
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
     
