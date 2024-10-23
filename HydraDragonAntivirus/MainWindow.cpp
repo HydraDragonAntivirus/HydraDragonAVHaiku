@@ -156,8 +156,8 @@ void MainWindow::CreateConfigDirectory() {
     BDirectory configDir(configPath.Path());
     if (configDir.InitCheck() != B_OK) {
         // Create the directory if it doesn't exist
-        if (mkdir(configPath.Path(), 0755) != 0) {
-            std::cerr << "Error creating config directory" << std::endl;
+        if (mkdir(configPath.Path(), 0755) != 0 && errno != EEXIST) {
+            std::cerr << "Error creating config directory: " << strerror(errno) << std::endl;
         } else {
             std::cout << "Config directory created: " << configPath.Path() << std::endl;
         }
@@ -166,21 +166,25 @@ void MainWindow::CreateConfigDirectory() {
     }
 }
 
-void MainwWindow::UpdateConfigFile(const std::string& selectedDirectory) {
+void MainWindow::UpdateConfigFile(const std::string& selectedDirectory) {
     BPath configPath;
     find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
     configPath.Append("HydraDragonAntivirus");
     configPath.Append("config.txt"); // or any specific config file name
 
-    BFile configFile(configPath.Path(), B_WRITE_ONLY | B_CREATE_FILE);
+    BFile configFile(configPath.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
     if (configFile.InitCheck() != B_OK) {
         std::cerr << "Error opening config file for writing" << std::endl;
         return;
     }
 
     // Write the selected directory to the config file
-    configFile.Write(selectedDirectory.c_str(), selectedDirectory.size());
-    std::cout << "Configuration file updated with directory: " << selectedDirectory << std::endl;
+    ssize_t bytesWritten = configFile.Write(selectedDirectory.c_str(), selectedDirectory.size());
+    if (bytesWritten != (ssize_t)selectedDirectory.size()) {
+        std::cerr << "Error writing to config file" << std::endl;
+    } else {
+        std::cout << "Configuration file updated with directory: " << selectedDirectory << std::endl;
+    }
 }
 
 void MainWindow::ChangeMonitorDirectory()
