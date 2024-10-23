@@ -142,7 +142,7 @@ void MainWindow::MessageReceived(BMessage* message)
     }
 }
 
-void CreateConfigDirectory() {
+void MainWindow::CreateConfigDirectory() {
     BPath configPath;
     status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
     if (status != B_OK) {
@@ -166,7 +166,7 @@ void CreateConfigDirectory() {
     }
 }
 
-void UpdateConfigFile(const std::string& selectedDirectory) {
+void MainwWindow::UpdateConfigFile(const std::string& selectedDirectory) {
     BPath configPath;
     find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
     configPath.Append("HydraDragonAntivirus");
