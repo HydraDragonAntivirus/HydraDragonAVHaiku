@@ -229,7 +229,7 @@ void MainWindow::InstallClamAV() {
     system("cp -f clamavconfig/freshclam.conf /boot/system/settings/clamav/");
 
     // Copy the db folder to the ClamAV settings directory
-    system("cp -rf db /boot/system/settings/clamav/db");
+    system("cp -rf db /boot/system/settings/clamav");
 
     // Run freshclam to update the virus definitions
     system("freshclam");
