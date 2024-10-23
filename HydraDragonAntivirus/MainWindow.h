@@ -28,6 +28,8 @@ public:
     void ChangeMonitorDirectory();
     void CreateConfigDirectory();
     void UpdateConfigFile(const BPath& selectedPath);
+    void ChangeMonitorDirectory(BPath selectedPath);
+
     BString monitoringDirectory; // Member variable to store the monitoring directory
     
     static const uint32 kMsgChangeMonitorDirectory = 'chmd'; // New message constant for changing directory
