@@ -21,6 +21,7 @@
 #include <thread>
 #include <FilePanel.h> // Include this for file dialogs
 #include <Alert.h>
+#include <string>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
