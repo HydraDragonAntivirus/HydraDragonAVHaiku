@@ -51,6 +51,9 @@ MainWindow::MainWindow()
 
     CreateConfigDirectory(); // Create the config directory
 
+    // Load exclusion rules
+    std::set<std::string> exclusions = LoadExclusionRules("excluded/excluded_rules.txt");  // Use forward slash
+
     BMenuBar* menuBar = _BuildMenu();
 
     // Create the status view
@@ -465,6 +468,30 @@ void MainWindow::InstallClamAV() {
     alert->Go();  // Display the message box
 }
 
+// Function to load exclusion rules from a file
+std::set<std::string> MainWindow::LoadExclusionRules(const std::string& filePath) {
+    std::set<std::string> exclusions;
+    std::ifstream file(filePath);
+    
+    if (!file.is_open()) {
+        std::cerr << "Error opening exclusion rules file: " << filePath << std::endl;
+        return exclusions; // Return empty set on error
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        // Optionally trim whitespace from the line
+        line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
+        
+        if (!line.empty()) {
+            exclusions.insert(line); // Add the rule to the set
+        }
+    }
+
+    file.close();
+    return exclusions;
+}
+
 void MainWindow::MonitorClamAV() {
     // Set the quarantine directory within the user settings directory
     BPath quarantinePath;
@@ -492,7 +519,7 @@ void MainWindow::MonitorClamAV() {
         // Scan only new files
         for (const auto& file : currentFiles) {
             if (processedFiles.find(file) == processedFiles.end()) {
-                // If the file hasn't been processed yet, scan it
+                // If the file hasn't been processed yet, scan it with ClamAV
                 std::string clamScanCommand = "clamdscan --no-summary " + file + " > /tmp/clamdscan_output.txt 2>&1"; // Redirect output to a file
                 int result = system(clamScanCommand.c_str());
 
@@ -534,9 +561,25 @@ void MainWindow::MonitorClamAV() {
                 if (rules != nullptr) {
                     int yaraResult = yr_scan_file(file.c_str(), 0, nullptr, nullptr, nullptr);
                     if (yaraResult > 0) {
-                        std::string yaraAlertMessage = "YARA rule matched for file: " + file;
-                        fStatusView->Insert(yaraAlertMessage + "\n"); // Update status view
-                        // Optionally, you could also move to quarantine
+                        // YARA rule matched
+                        std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
+                        if (exclusions.find(matchedRule) == exclusions.end()) {
+                            // If the matched rule is not in exclusions, move to quarantine
+                            std::string yaraAlertMessage = "YARA rule matched for file: " + file + " - Rule: " + matchedRule;
+                            fStatusView->Insert(yaraAlertMessage + "\n"); // Update status view
+
+                            // Move to quarantine
+                            std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
+                            try {
+                                std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
+                                printf("Moved to quarantine due to YARA match: %s\n", file.c_str());
+                            } catch (const std::filesystem::filesystem_error& e) {
+                                printf("Error moving file to quarantine: %s\n", e.what());
+                            }
+                        } else {
+                            std::string exclusionMessage = "Matched rule " + matchedRule + " is excluded for file: " + file;
+                            fStatusView->Insert(exclusionMessage + "\n"); // Update status view about exclusion
+                        }
                     }
                 }
             }
