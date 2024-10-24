@@ -35,6 +35,7 @@ static const uint32 kMsgActivateClamAV = 'actv';
 static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
 static const uint32 kMsgUpdateVirusDefinitions = 'updt';
 static const uint32 kMsgInstallYara = 'insy'; // New message for Yara installation
+static const uint32 kMsgActivateYara = 'acty'; // New message for YARA activation
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -114,6 +115,9 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("Activate ClamAV"), new BMessage(kMsgActivateClamAV));
     menu->AddItem(item);
 
+    item = new BMenuItem(B_TRANSLATE("Activate YARA"), new BMessage(kMsgActivateYara));
+    menu->AddItem(item);
+
     // 'Installation' Menu
     menu = new BMenu(B_TRANSLATE("Installation"));
     item = new BMenuItem(B_TRANSLATE("Install ClamAV"), new BMessage(kMsgInstallClamAV));
@@ -176,6 +180,10 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgInstallYara: // Handle Yara installation
         InstallYara();
+        break;
+
+    case kMsgActivateYara: // Handle YARA activation
+        ActivateYARA();
         break;
 
     default:
@@ -258,6 +266,37 @@ void MainWindow::RefsReceived(BMessage* message)
                                    "The monitoring directory has been updated.",
                                    "OK", NULL, NULL, B_WIDTH_AS_USUAL, B_INFO_ALERT);
         alert->Go();
+    }
+}
+
+void MainWindow::ActivateYARA() {
+    printf("Activating YARA...\n");
+
+    // Check if the compiled_rule.yrc file exists
+    std::string yaraRulesPath = "compiled_rule.yrc"; // Update with the actual path
+    if (!std::filesystem::exists(yaraRulesPath)) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "YARA rules file not found.", 
+                                   "OK");
+        alert->Go();
+        return; // Exit if file does not exist
+    }
+
+    // Command to load YARA rules
+    std::string command = "yara -r " + yaraRulesPath; // Modify based on your specific needs
+    int result = system(command.c_str());
+
+    // Inform the user of the result
+    if (result == 0) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "YARA rules activated successfully.", 
+                                   "OK");
+        alert->Go();  // Display success message
+    } else {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "Failed to activate YARA rules.", 
+                                   "OK");
+        alert->Go();  // Display failure message
     }
 }
 
