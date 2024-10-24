@@ -346,7 +346,7 @@ void MainWindow::InstallYara() {
     printf("Installing Yara...\n");
 
     // Install Yara without confirmation
-    system("pkgman install -y yara");
+    system("pkgman install -y yara_devel");
 
     // Show a message box at the end of the process
     BAlert* alert = new BAlert("Yara Installation", 
