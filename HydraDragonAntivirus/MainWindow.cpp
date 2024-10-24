@@ -140,6 +140,11 @@ BMenuBar* MainWindow::_BuildMenu()
     menu = new BMenu(B_TRANSLATE("Installation"));
     item = new BMenuItem(B_TRANSLATE("Install ClamAV"), new BMessage(kMsgInstallClamAV));
     menu->AddItem(item);
+    
+    // New item to check if ClamAV is installed
+    item = new BMenuItem(B_TRANSLATE("Check ClamAV Installation"), new BMessage(kMsgCheckClamAVInstallation));
+    menu->AddItem(item);
+    
     menuBar->AddItem(menu); // Add Installation menu to menuBar
 
     // 'Update' Menu
@@ -224,6 +229,20 @@ void MainWindow::MessageReceived(BMessage* message)
         ActivateYARA();
         break;
 
+        case kMsgCheckClamAVInstallation: {
+            if (IsClamAVInstalled()) {
+                BAlert* alert = new BAlert("ClamAV Check", 
+                                           "ClamAV is installed.", 
+                                           "OK");
+                alert->Go();  // Display success message
+            } else {
+                BAlert* alert = new BAlert("ClamAV Check", 
+                                           "ClamAV is not installed.", 
+                                           "OK");
+                alert->Go();  // Display failure message
+            }
+            break;
+        }
     default:
         BWindow::MessageReceived(message);
         break;
@@ -411,6 +430,15 @@ void MainWindow::ActivateYARA() {
 
 void MainWindow::ActivateClamAV() {
     printf("Activating ClamAV...\n");
+
+    // Check if ClamAV is installed
+    if (!IsClamAVInstalled()) {
+        BAlert* alert = new BAlert("ClamAV Activation", 
+                                   "ClamAV is not installed. Please install it first.", 
+                                   "OK");
+        alert->Go();  // Display message
+        return; // Exit if ClamAV is not installed
+    }
 
     // Start the clamd daemon
     int result = system("clamd"); 
