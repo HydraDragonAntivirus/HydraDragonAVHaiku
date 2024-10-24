@@ -33,6 +33,7 @@ static const uint32 kMsgInstallClamAV = 'inst';
 static const uint32 kMsgChangeMonitorDirectory = 'chmd';
 static const uint32 kMsgActivateClamAV = 'actv';
 static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
+static const uint32 kMsgUpdateVirusDefinitions = 'updt';
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -93,14 +94,12 @@ BMenuBar* MainWindow::_BuildMenu()
 
     // 'Monitor' Menu
     menu = new BMenu(B_TRANSLATE("Monitor"));
-
     item = new BMenuItem(B_TRANSLATE("Change Monitor Directory"), new BMessage(kMsgChangeMonitorDirectory));
     menu->AddItem(item);
 
     item = new BMenuItem(B_TRANSLATE("Start Ransomware Monitoring"), new BMessage(kMsgStartMonitor), 'S');
     menu->AddItem(item);
-
-    // Add "Activate ClamAV" under the Monitor menu
+ 
     item = new BMenuItem(B_TRANSLATE("Activate ClamAV"), new BMessage(kMsgActivateClamAV));
     menu->AddItem(item);
 
@@ -113,10 +112,15 @@ BMenuBar* MainWindow::_BuildMenu()
     menuBar->AddItem(menu);
 
     // 'Installation' Menu
-    menu = new BMenu(B_TRANSLATE("Installation")); // New menu for installations
+    menu = new BMenu(B_TRANSLATE("Installation"));
     item = new BMenuItem(B_TRANSLATE("Install ClamAV"), new BMessage(kMsgInstallClamAV));
     menu->AddItem(item);
+    menuBar->AddItem(menu);
 
+    // 'Update' Menu
+    menu = new BMenu(B_TRANSLATE("Update")); // New Update menu
+    item = new BMenuItem(B_TRANSLATE("Update Virus Definitions"), new BMessage(kMsgUpdateVirusDefinitions));
+    menu->AddItem(item);
     menuBar->AddItem(menu);
 
     // 'Help' Menu
@@ -124,7 +128,6 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("About" B_UTF8_ELLIPSIS), new BMessage(B_ABOUT_REQUESTED));
     item->SetTarget(be_app);
     menu->AddItem(item);
-
     menuBar->AddItem(menu);
 
     return menuBar;
@@ -159,6 +162,10 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgStartClamAVMonitor:
         StartClamAVMonitoring();
+        break;
+
+    case kMsgUpdateVirusDefinitions:
+        UpdateVirusDefinitions();
         break;
 
     default:
@@ -262,6 +269,27 @@ void MainWindow::ActivateClamAV() {
                                    "Failed to activate ClamAV daemon.", 
                                    "OK");
         alert->Go();  // Display failure message
+    }
+}
+
+void MainWindow::UpdateVirusDefinitions()
+{
+    printf("Updating virus definitions...\n");
+
+    // Run freshclam to update the virus definitions
+    int result = system("freshclam");
+
+    // Check the result and inform the user
+    if (result == 0) {
+        BAlert* alert = new BAlert("Update Successful", 
+                                   "Virus definitions updated successfully.", 
+                                   "OK");
+        alert->Go();
+    } else {
+        BAlert* alert = new BAlert("Update Failed", 
+                                   "Failed to update virus definitions.", 
+                                   "OK");
+        alert->Go();
     }
 }
 

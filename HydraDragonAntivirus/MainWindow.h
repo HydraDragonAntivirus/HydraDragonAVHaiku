@@ -32,6 +32,7 @@ public:
     void ActivateClamAV();
     void StartClamAVMonitoring();
     void MonitorClamAV();
+    void UpdateVirusDefinitions();
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
 
