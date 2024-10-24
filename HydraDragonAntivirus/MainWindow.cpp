@@ -493,14 +493,33 @@ void MainWindow::MonitorClamAV() {
         for (const auto& file : currentFiles) {
             if (processedFiles.find(file) == processedFiles.end()) {
                 // If the file hasn't been processed yet, scan it
-                std::string command = "clamdscan " + file; // Scan the file
-                int result = system(command.c_str());
+                std::string clamScanCommand = "clamdscan --no-summary " + file + " > /tmp/clamdscan_output.txt 2>&1"; // Redirect output to a file
+                int result = system(clamScanCommand.c_str());
 
-                // Optionally check result and handle according to your needs
-                if (result == 0) {
+                // Check result and read output
+                std::ifstream outputFile("/tmp/clamdscan_output.txt");
+                std::string line;
+                std::string virusName;
+
+                if (result != 0) {
+                    // Read the output to find the virus name
+                    while (std::getline(outputFile, line)) {
+                        if (line.find("FOUND") != std::string::npos) {
+                            // Extract virus name from the output
+                            virusName = line.substr(0, line.find(" FOUND")); // Get the part before "FOUND"
+                            break;
+                        }
+                    }
+                }
+
+                if (virusName.empty()) {
                     // The scan was successful and the file is clean
                     processedFiles.insert(file); // Mark this file as processed
                 } else {
+                    // Notify the user about the virus detected
+                    std::string alertMessage = "Virus detected: " + virusName + " in file: " + file;
+                    fStatusView->Insert(alertMessage + "\n"); // Update status view
+
                     // Move the file to quarantine
                     std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
                     try {
@@ -510,11 +529,18 @@ void MainWindow::MonitorClamAV() {
                         printf("Error moving file to quarantine: %s\n", e.what());
                     }
                 }
+                
+                // Now, scan the same file with YARA rules if they are loaded
+                if (rules != nullptr) {
+                    int yaraResult = yr_scan_file(file.c_str(), 0, nullptr, nullptr, nullptr);
+                    if (yaraResult > 0) {
+                        std::string yaraAlertMessage = "YARA rule matched for file: " + file;
+                        fStatusView->Insert(yaraAlertMessage + "\n"); // Update status view
+                        // Optionally, you could also move to quarantine
+                    }
+                }
             }
         }
-
-        // Wait before the next scan (optional)
-        std::this_thread::sleep_for(std::chrono::minutes(5)); // Adjust as needed
     }
 }
 
