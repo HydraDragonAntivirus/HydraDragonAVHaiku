@@ -33,6 +33,7 @@ public:
     void StartClamAVMonitoring();
     void MonitorClamAV();
     void UpdateVirusDefinitions();
+    void InstallYara();
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
 

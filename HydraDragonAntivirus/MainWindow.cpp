@@ -34,6 +34,7 @@ static const uint32 kMsgChangeMonitorDirectory = 'chmd';
 static const uint32 kMsgActivateClamAV = 'actv';
 static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
 static const uint32 kMsgUpdateVirusDefinitions = 'updt';
+static const uint32 kMsgInstallYara = 'insy'; // New message for Yara installation
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -117,6 +118,10 @@ BMenuBar* MainWindow::_BuildMenu()
     menu->AddItem(item);
     menuBar->AddItem(menu);
 
+    item = new BMenuItem(B_TRANSLATE("Install Yara"), new BMessage(kMsgInstallYara)); // Add this line
+    menu->AddItem(item);
+    menuBar->AddItem(menu);
+
     // 'Update' Menu
     menu = new BMenu(B_TRANSLATE("Update")); // New Update menu
     item = new BMenuItem(B_TRANSLATE("Update Virus Definitions"), new BMessage(kMsgUpdateVirusDefinitions));
@@ -166,6 +171,10 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgUpdateVirusDefinitions:
         UpdateVirusDefinitions();
+        break;
+
+    case kMsgInstallYara: // Handle Yara installation
+        InstallYara();
         break;
 
     default:
@@ -291,6 +300,19 @@ void MainWindow::UpdateVirusDefinitions()
                                    "OK");
         alert->Go();
     }
+}
+
+void MainWindow::InstallYara() {
+    printf("Installing Yara...\n");
+
+    // Install Yara without confirmation
+    system("pkgman install -y yara");
+
+    // Show a message box at the end of the process
+    BAlert* alert = new BAlert("Yara Installation", 
+                               "Yara installation completed successfully.", 
+                               "OK");
+    alert->Go();  // Display the message box
 }
 
 void MainWindow::InstallClamAV() {
