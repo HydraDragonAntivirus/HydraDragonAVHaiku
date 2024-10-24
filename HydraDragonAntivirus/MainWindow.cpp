@@ -297,8 +297,7 @@ void MainWindow::StartClamAVMonitoring()
     clamAVThread.detach(); // Detach the thread to run independently
 }
 
-void MainWindow::MonitorClamAV()
-{
+void MainWindow::MonitorClamAV() {
     // Set the quarantine directory within the user settings directory
     BPath quarantinePath;
     find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
@@ -309,9 +308,9 @@ void MainWindow::MonitorClamAV()
         std::filesystem::create_directories(quarantinePath.Path());
     }
 
-    // Rest of your MonitorClamAV code...
-    std::set<std::string> processedFiles; // Track processed files
-    std::string monitorDir = monitoringDirectory;
+    // Set to track processed files
+    std::set<std::string> processedFiles; 
+    std::string monitorDir = monitoringDirectory.String(); // Convert BString to std::string
 
     while (true) {
         // Get the list of files in the directory
@@ -335,7 +334,7 @@ void MainWindow::MonitorClamAV()
                     processedFiles.insert(file); // Mark this file as processed
                 } else {
                     // Move the file to quarantine
-                    std::string quarantineFilePath = quarantinePath.Path() + "/" + std::filesystem::path(file).filename().string();
+                    std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
                     try {
                         std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
                         printf("Moved to quarantine: %s\n", file.c_str());
