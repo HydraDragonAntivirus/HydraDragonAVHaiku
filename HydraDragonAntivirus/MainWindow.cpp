@@ -98,10 +98,7 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("Change Monitor Directory"), new BMessage(kMsgChangeMonitorDirectory));
     menu->AddItem(item);
 
-    item = new BMenuItem(B_TRANSLATE("Start Ransomware Monitoring"), new BMessage(kMsgStartMonitor), 'S');
-    menu->AddItem(item);
- 
-    item = new BMenuItem(B_TRANSLATE("Activate ClamAV"), new BMessage(kMsgActivateClamAV));
+    item = new BMenuItem(B_TRANSLATE("Start Ransomware Monitoring"), new BMessage(kMsgStartMonitor), 'C');
     menu->AddItem(item);
 
     item = new BMenuItem(B_TRANSLATE("Start ClamAV And YARA Monitoring"), new BMessage(kMsgStartClamAVMonitor), 'C');
@@ -109,14 +106,18 @@ BMenuBar* MainWindow::_BuildMenu()
 
     item = new BMenuItem(B_TRANSLATE("Quit"), new BMessage(kMsgQuitApp), 'Q');
     menu->AddItem(item);
-
     menuBar->AddItem(menu);
+
+    // 'Engine' Menu
+    menu = new BMenu(B_TRANSLATE("Engine")); // New Engine menu
+
+    item = new BMenuItem(B_TRANSLATE("Activate ClamAV"), new BMessage(kMsgActivateClamAV));
+    menu->AddItem(item);
 
     // 'Installation' Menu
     menu = new BMenu(B_TRANSLATE("Installation"));
     item = new BMenuItem(B_TRANSLATE("Install ClamAV"), new BMessage(kMsgInstallClamAV));
     menu->AddItem(item);
-    menuBar->AddItem(menu);
 
     item = new BMenuItem(B_TRANSLATE("Install Yara"), new BMessage(kMsgInstallYara)); // Add this line
     menu->AddItem(item);
