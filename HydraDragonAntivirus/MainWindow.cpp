@@ -23,6 +23,7 @@
 #include <string>
 #include <yara.h>
 #include <cstdio>
+#include <iostream>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
