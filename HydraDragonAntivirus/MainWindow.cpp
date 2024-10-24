@@ -42,7 +42,7 @@ MainWindow::MainWindow()
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
     // Initialize the file panel, set it to select directories
-    filePanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
+    fSelectPanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
 
     CreateConfigDirectory(); // Create the config directory
 
@@ -80,7 +80,7 @@ MainWindow::MainWindow()
 MainWindow::~MainWindow()
 {
     _SaveSettings();
-    delete filePanel;  // Clean up the file panel
+    delete fSelectPanel;  // Clean up the file panel
 }
 
 BMenuBar* MainWindow::_BuildMenu()
@@ -138,6 +138,11 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgChangeMonitorDirectory: // Handle directory change
         ChangeMonitorDirectory();
+        break;
+
+    // Handle B_REFS_RECEIVED to call RefsReceived
+    case B_REFS_RECEIVED:
+        RefsReceived(message);  // Call RefsReceived with the message
         break;
 
     default:
@@ -201,8 +206,9 @@ void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
 
 void MainWindow::ChangeMonitorDirectory()
 {
-    // Open the file panel to allow the user to select a directory
-    filePanel->Show();
+    // Set the file panel's target to this window
+    fSelectPanel->SetTarget(this);
+    fSelectPanel->Show();
 }
 
 void MainWindow::RefsReceived(BMessage* message)
@@ -211,7 +217,7 @@ void MainWindow::RefsReceived(BMessage* message)
     if (message->FindRef("refs", &ref) == B_OK) {
         BPath path(&ref);
         
-        // Call UpdateConfigFile with the selected path
+        // Update the configuration with the selected path
         UpdateConfigFile(path);
 
         // Show an alert to confirm the directory change

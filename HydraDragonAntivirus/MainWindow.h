@@ -19,6 +19,7 @@ public:
 	virtual					~MainWindow();
 
 	virtual void			MessageReceived(BMessage* msg);
+    virtual void            RefsReceived(BMessage* message); // Declaration of RefsReceived
 
     // Function declarations
     void StartMonitoring();
@@ -30,8 +31,6 @@ public:
     void UpdateConfigFile(const BPath& selectedPath);
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
-    
-    static const uint32 kMsgChangeMonitorDirectory = 'chmd'; // New message constant for changing directory
 
 private:
 			BMenuBar*		_BuildMenu();
@@ -42,6 +41,7 @@ private:
 			BMenuItem*		fSaveMenuItem;
 			BFilePanel*		fOpenPanel;
 			BFilePanel*		fSavePanel;
+            BFilePanel*     fSelectPanel;
 };
 
 #endif
