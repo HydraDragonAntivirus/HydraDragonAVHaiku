@@ -36,7 +36,6 @@ public:
     void UpdateVirusDefinitions();
     void ActivateYARA();
     void StopMonitoring();  //Method to stop monitoring
-    void MessageReceived(BMessage* message) override;
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
