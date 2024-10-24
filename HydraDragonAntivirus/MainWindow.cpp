@@ -31,6 +31,8 @@ static const uint32 kMsgStartMonitor = 'strt';
 static const uint32 kMsgQuitApp = 'quit';
 static const uint32 kMsgInstallClamAV = 'inst';
 static const uint32 kMsgChangeMonitorDirectory = 'chmd';
+static const uint32 kMsgActivateClamAV = 'actv';
+static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -92,10 +94,17 @@ BMenuBar* MainWindow::_BuildMenu()
     // 'Monitor' Menu
     menu = new BMenu(B_TRANSLATE("Monitor"));
 
-    item = new BMenuItem(B_TRANSLATE("Start Monitoring"), new BMessage(kMsgStartMonitor), 'S');
+    item = new BMenuItem(B_TRANSLATE("Change Monitor Directory"), new BMessage(kMsgChangeMonitorDirectory));
     menu->AddItem(item);
 
-    item = new BMenuItem(B_TRANSLATE("Change Monitor Directory"), new BMessage(kMsgChangeMonitorDirectory));
+    item = new BMenuItem(B_TRANSLATE("Start Ransomware Monitoring"), new BMessage(kMsgStartMonitor), 'S');
+    menu->AddItem(item);
+
+    // Add "Activate ClamAV" under the Monitor menu
+    item = new BMenuItem(B_TRANSLATE("Activate ClamAV"), new BMessage(kMsgActivateClamAV));
+    menu->AddItem(item);
+
+    item = new BMenuItem(B_TRANSLATE("Start ClamAV Monitoring"), new BMessage(kMsgStartClamAVMonitor), 'C');
     menu->AddItem(item);
 
     item = new BMenuItem(B_TRANSLATE("Quit"), new BMessage(kMsgQuitApp), 'Q');
@@ -132,17 +141,24 @@ void MainWindow::MessageReceived(BMessage* message)
         PostMessage(B_QUIT_REQUESTED);
         break;
 
-    case kMsgInstallClamAV: // Handle ClamAV installation
+    case kMsgInstallClamAV:
         InstallClamAV();
         break;
 
-    case kMsgChangeMonitorDirectory: // Handle directory change
+    case kMsgActivateClamAV: // Handle ClamAV activation
+        ActivateClamAV();
+        break;
+
+    case kMsgChangeMonitorDirectory:
         ChangeMonitorDirectory();
         break;
 
-    // Handle B_REFS_RECEIVED to call RefsReceived
     case B_REFS_RECEIVED:
-        RefsReceived(message);  // Call RefsReceived with the message
+        RefsReceived(message);
+        break;
+
+    case kMsgStartClamAVMonitor:
+        StartClamAVMonitoring();
         break;
 
     default:
@@ -228,6 +244,27 @@ void MainWindow::RefsReceived(BMessage* message)
     }
 }
 
+void MainWindow::ActivateClamAV() {
+    printf("Activating ClamAV...\n");
+
+    // Start the clamd daemon
+    int result = system("clamd"); 
+
+    if (result == 0) {
+        // Successful start
+        BAlert* alert = new BAlert("ClamAV Activation", 
+                                   "ClamAV daemon activated successfully.", 
+                                   "OK");
+        alert->Go();  // Display success message
+    } else {
+        // Failed to start
+        BAlert* alert = new BAlert("ClamAV Activation", 
+                                   "Failed to activate ClamAV daemon.", 
+                                   "OK");
+        alert->Go();  // Display failure message
+    }
+}
+
 void MainWindow::InstallClamAV() {
     printf("Installing ClamAV...\n");
 
@@ -236,6 +273,9 @@ void MainWindow::InstallClamAV() {
 
     // Copy clamavconfig/freshclam.conf to /boot/system/settings/clamav/
     system("cp -f clamavconfig/freshclam.conf /boot/system/settings/clamav/");
+
+    // Copy clamavconfig/freshclam.conf to /boot/system/settings/clamav/
+    system("cp -f clamavconfig/clamd.conf /boot/system/settings/clamav/");
 
     // Copy the db folder to the ClamAV settings directory
     system("cp -rf db /boot/system/settings/clamav");
@@ -248,6 +288,67 @@ void MainWindow::InstallClamAV() {
                                "ClamAV installation and setup completed successfully.", 
                                "OK");
     alert->Go();  // Display the message box
+}
+
+void MainWindow::StartClamAVMonitoring()
+{
+    printf("ClamAV Monitoring started\n");
+    std::thread clamAVThread(&MainWindow::MonitorClamAV, this);
+    clamAVThread.detach(); // Detach the thread to run independently
+}
+
+void MainWindow::MonitorClamAV()
+{
+    // Set the quarantine directory within the user settings directory
+    BPath quarantinePath;
+    find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
+    quarantinePath.Append("HydraDragonAntivirus/Quarantine");
+
+    // Create the quarantine directory if it doesn't exist
+    if (!std::filesystem::exists(quarantinePath.Path())) {
+        std::filesystem::create_directories(quarantinePath.Path());
+    }
+
+    // Rest of your MonitorClamAV code...
+    std::set<std::string> processedFiles; // Track processed files
+    std::string monitorDir = monitoringDirectory;
+
+    while (true) {
+        // Get the list of files in the directory
+        std::vector<std::string> currentFiles;
+        for (const auto& entry : std::filesystem::directory_iterator(monitorDir)) {
+            if (entry.is_regular_file()) {
+                currentFiles.push_back(entry.path().string());
+            }
+        }
+
+        // Scan only new files
+        for (const auto& file : currentFiles) {
+            if (processedFiles.find(file) == processedFiles.end()) {
+                // If the file hasn't been processed yet, scan it
+                std::string command = "clamdscan " + file; // Scan the file
+                int result = system(command.c_str());
+
+                // Optionally check result and handle according to your needs
+                if (result == 0) {
+                    // The scan was successful and the file is clean
+                    processedFiles.insert(file); // Mark this file as processed
+                } else {
+                    // Move the file to quarantine
+                    std::string quarantineFilePath = quarantinePath.Path() + "/" + std::filesystem::path(file).filename().string();
+                    try {
+                        std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
+                        printf("Moved to quarantine: %s\n", file.c_str());
+                    } catch (const std::filesystem::filesystem_error& e) {
+                        printf("Error moving file to quarantine: %s\n", e.what());
+                    }
+                }
+            }
+        }
+
+        // Wait before the next scan (optional)
+        std::this_thread::sleep_for(std::chrono::minutes(5)); // Adjust as needed
+    }
 }
 
 void MainWindow::StartMonitoring()
