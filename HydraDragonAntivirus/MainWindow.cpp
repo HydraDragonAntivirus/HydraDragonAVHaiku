@@ -104,7 +104,7 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("Activate ClamAV"), new BMessage(kMsgActivateClamAV));
     menu->AddItem(item);
 
-    item = new BMenuItem(B_TRANSLATE("Start ClamAV Monitoring"), new BMessage(kMsgStartClamAVMonitor), 'C');
+    item = new BMenuItem(B_TRANSLATE("Start ClamAV And YARA Monitoring"), new BMessage(kMsgStartClamAVMonitor), 'C');
     menu->AddItem(item);
 
     item = new BMenuItem(B_TRANSLATE("Quit"), new BMessage(kMsgQuitApp), 'Q');
