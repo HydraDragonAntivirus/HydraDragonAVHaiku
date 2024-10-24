@@ -1,2 +1,3 @@
 pkgman install yara
 yara compiled_rules.yar compiled_rules.yrc
+pkgman install yara_devel

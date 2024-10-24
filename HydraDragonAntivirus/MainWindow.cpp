@@ -22,6 +22,7 @@
 #include <FilePanel.h> // Include this for file dialogs
 #include <Alert.h>
 #include <string>
+#include <yara.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -34,7 +35,6 @@ static const uint32 kMsgChangeMonitorDirectory = 'chmd';
 static const uint32 kMsgActivateClamAV = 'actv';
 static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
 static const uint32 kMsgUpdateVirusDefinitions = 'updt';
-static const uint32 kMsgInstallYara = 'insy'; // New message for Yara installation
 static const uint32 kMsgActivateYara = 'acty'; // New message for YARA activation
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
@@ -123,10 +123,6 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("Install ClamAV"), new BMessage(kMsgInstallClamAV));
     menu->AddItem(item);
 
-    item = new BMenuItem(B_TRANSLATE("Install Yara"), new BMessage(kMsgInstallYara)); // Add this line
-    menu->AddItem(item);
-    menuBar->AddItem(menu);
-
     // 'Update' Menu
     menu = new BMenu(B_TRANSLATE("Update")); // New Update menu
     item = new BMenuItem(B_TRANSLATE("Update Virus Definitions"), new BMessage(kMsgUpdateVirusDefinitions));
@@ -176,10 +172,6 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgUpdateVirusDefinitions:
         UpdateVirusDefinitions();
-        break;
-
-    case kMsgInstallYara: // Handle Yara installation
-        InstallYara();
         break;
 
     case kMsgActivateYara: // Handle YARA activation
@@ -282,22 +274,34 @@ void MainWindow::ActivateYARA() {
         return; // Exit if file does not exist
     }
 
-    // Command to load YARA rules
-    std::string command = "yara -r " + yaraRulesPath; // Modify based on your specific needs
-    int result = system(command.c_str());
+    // Initialize YARA
+    if (yr_initialize() != ERROR_SUCCESS) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "Failed to initialize YARA.", 
+                                   "OK");
+        alert->Go();
+        return; // Exit if initialization fails
+    }
+
+    YR_RULES* rules;
+    if (yr_load_rules_file(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "Failed to load YARA rules.", 
+                                   "OK");
+        alert->Go();
+        yr_finalize();
+        return; // Exit if loading rules fails
+    }
 
     // Inform the user of the result
-    if (result == 0) {
-        BAlert* alert = new BAlert("YARA Activation", 
-                                   "YARA rules activated successfully.", 
-                                   "OK");
-        alert->Go();  // Display success message
-    } else {
-        BAlert* alert = new BAlert("YARA Activation", 
-                                   "Failed to activate YARA rules.", 
-                                   "OK");
-        alert->Go();  // Display failure message
-    }
+    BAlert* alert = new BAlert("YARA Activation", 
+                               "YARA rules activated successfully.", 
+                               "OK");
+    alert->Go();  // Display success message
+
+    // Cleanup
+    yr_rules_destroy(rules);
+    yr_finalize();
 }
 
 void MainWindow::ActivateClamAV() {
@@ -340,19 +344,6 @@ void MainWindow::UpdateVirusDefinitions()
                                    "OK");
         alert->Go();
     }
-}
-
-void MainWindow::InstallYara() {
-    printf("Installing Yara...\n");
-
-    // Install Yara without confirmation
-    system("pkgman install -y yara_devel");
-
-    // Show a message box at the end of the process
-    BAlert* alert = new BAlert("Yara Installation", 
-                               "Yara installation completed successfully.", 
-                               "OK");
-    alert->Go();  // Display the message box
 }
 
 void MainWindow::InstallClamAV() {
