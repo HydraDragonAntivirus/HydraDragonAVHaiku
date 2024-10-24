@@ -53,8 +53,15 @@ MainWindow::MainWindow()
 
     BMenuBar* menuBar = _BuildMenu();
 
+    // Create the status view
+    fStatusView = new BTextView("statusView");
+    fStatusView->MakeEditable(false); // Make it read-only
+    fStatusView->SetText("Status:\n"); // Initialize with a default message
+
+    // Set the layout
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .Add(menuBar)
+        .Add(fStatusView)
         .AddGlue()
         .End();
 
@@ -102,8 +109,14 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("Start Ransomware Monitoring"), new BMessage(kMsgStartMonitor), 'C');
     menu->AddItem(item);
 
-    item = new BMenuItem(B_TRANSLATE("Start ClamAV And YARA Monitoring"), new BMessage(kMsgStartClamAVMonitor), 'C');
+    item = new BMenuItem(B_TRANSLATE("Stop Ransomware Monitoring"), new BMessage(kMsgStopMonitor), 'S');
+    menu->AddItem(item); // Add item for stopping ransomware monitoring
+
+    item = new BMenuItem(B_TRANSLATE("Start ClamAV And YARA Monitoring"), new BMessage(kMsgStartClamAVMonitor), 'A');
     menu->AddItem(item);
+
+    item = new BMenuItem(B_TRANSLATE("Stop ClamAV And YARA Monitoring"), new BMessage(kMsgStopClamAVMonitor), 'Z');
+    menu->AddItem(item); // Add item for stopping ClamAV and YARA monitoring
 
     item = new BMenuItem(B_TRANSLATE("Quit"), new BMessage(kMsgQuitApp), 'Q');
     menu->AddItem(item);
@@ -118,23 +131,26 @@ BMenuBar* MainWindow::_BuildMenu()
     item = new BMenuItem(B_TRANSLATE("Activate YARA"), new BMessage(kMsgActivateYara));
     menu->AddItem(item);
 
+    menuBar->AddItem(menu); // Add Engine menu to menuBar
+
     // 'Installation' Menu
     menu = new BMenu(B_TRANSLATE("Installation"));
     item = new BMenuItem(B_TRANSLATE("Install ClamAV"), new BMessage(kMsgInstallClamAV));
     menu->AddItem(item);
+    menuBar->AddItem(menu); // Add Installation menu to menuBar
 
     // 'Update' Menu
     menu = new BMenu(B_TRANSLATE("Update")); // New Update menu
     item = new BMenuItem(B_TRANSLATE("Update Virus Definitions"), new BMessage(kMsgUpdateVirusDefinitions));
     menu->AddItem(item);
-    menuBar->AddItem(menu);
+    menuBar->AddItem(menu); // Add Update menu to menuBar
 
     // 'Help' Menu
     menu = new BMenu(B_TRANSLATE("Help"));
     item = new BMenuItem(B_TRANSLATE("About" B_UTF8_ELLIPSIS), new BMessage(B_ABOUT_REQUESTED));
     item->SetTarget(be_app);
     menu->AddItem(item);
-    menuBar->AddItem(menu);
+    menuBar->AddItem(menu); // Add Help menu to menuBar
 
     return menuBar;
 }
@@ -146,6 +162,18 @@ void MainWindow::MessageReceived(BMessage* message)
         StartMonitoring();
         break;
 
+    case kMsgStopMonitor: // Handle stopping ransomware monitoring
+        StopMonitoring();
+        break;
+
+    case kMsgStartClamAVMonitor:
+        StartClamAVMonitoring();
+        break;
+
+    case kMsgStopClamAVMonitor: // Handle stopping ClamAV and YARA monitoring
+        StopClamAVMonitoring();
+        break;
+
     case kMsgQuitApp: {
         // Cleanup YARA rules if they were loaded
         if (rules != nullptr) {
@@ -154,7 +182,7 @@ void MainWindow::MessageReceived(BMessage* message)
         }
 
         // Kill the clamd process using system call
-        int result = system("kill clamd"); // Kills instance of clamd
+        int result = system("killall clamd"); // Kills instance of clamd
         if (result == 0) {
             printf("Successfully sent kill command to clamd.\n");
         } else {
@@ -185,10 +213,6 @@ void MainWindow::MessageReceived(BMessage* message)
         RefsReceived(message);
         break;
 
-    case kMsgStartClamAVMonitor:
-        StartClamAVMonitoring();
-        break;
-
     case kMsgUpdateVirusDefinitions:
         UpdateVirusDefinitions();
         break;
@@ -201,6 +225,57 @@ void MainWindow::MessageReceived(BMessage* message)
         BWindow::MessageReceived(message);
         break;
     }
+}
+
+void MainWindow::StartMonitoring()
+{
+    if (!isMonitoring) { // Check if not already monitoring
+        printf("Monitoring started\n");
+        fStatusView->Insert("Ransomware monitoring started.\n"); // Update status view
+        isMonitoring = true; // Set monitoring state
+        monitoringThread = std::thread(&MainWindow::MonitorDesktop, this);
+        monitoringThread.detach(); // Detach the thread to run independently
+    }
+}
+
+void MainWindow::StopMonitoring()
+{
+    if (isMonitoring) { // Check if currently monitoring
+        printf("Monitoring stopped\n");
+        fStatusView->Insert("Ransomware monitoring stopped.\n"); // Update status view
+        isMonitoring = false; // Update monitoring state
+        monitoringThread.join();
+    }
+}
+
+void MainWindow::StartClamAVMonitoring()
+{
+    printf("ClamAV Monitoring started\n");
+    fStatusView->Insert("ClamAV monitoring started.\n"); // Update status view
+    std::thread clamAVThread(&MainWindow::MonitorClamAV, this);
+    clamAVThread.detach(); // Detach the thread to run independently
+}
+
+void MainWindow::StopClamAVMonitoring()
+{
+    // Cleanup YARA rules if they were loaded
+    if (rules != nullptr) {
+        yr_rules_destroy(rules);
+        rules = nullptr; // Set to nullptr to avoid dangling pointer
+        printf("YARA rules have been cleaned up.\n");
+    }
+
+    // Kill the clamd process using system call
+    int result = system("killall clamd"); // Kills instance of clamd
+    if (result == 0) {
+        printf("Successfully sent kill command to clamd.\n");
+    } else {
+        perror("Failed to kill clamd");
+    }
+
+    fStatusView->Insert("ClamAV monitoring stopped.\n"); // Update status view
+    BAlert alert("Monitoring Stopped", "ClamAV and YARA monitoring has been stopped.", NULL, NULL, B_MESSAGE_NOTHING_SPECIAL);
+    alert->Show();
 }
 
 void MainWindow::CreateConfigDirectory() {
@@ -390,13 +465,6 @@ void MainWindow::InstallClamAV() {
     alert->Go();  // Display the message box
 }
 
-void MainWindow::StartClamAVMonitoring()
-{
-    printf("ClamAV Monitoring started\n");
-    std::thread clamAVThread(&MainWindow::MonitorClamAV, this);
-    clamAVThread.detach(); // Detach the thread to run independently
-}
-
 void MainWindow::MonitorClamAV() {
     // Set the quarantine directory within the user settings directory
     BPath quarantinePath;
@@ -448,13 +516,6 @@ void MainWindow::MonitorClamAV() {
         // Wait before the next scan (optional)
         std::this_thread::sleep_for(std::chrono::minutes(5)); // Adjust as needed
     }
-}
-
-void MainWindow::StartMonitoring()
-{
-    printf("Monitoring started\n");
-    std::thread monitoringThread(&MainWindow::MonitorDesktop, this);
-    monitoringThread.detach(); // Detach the thread to run independently
 }
 
 void MainWindow::CheckFilesInDirectory(const std::string& directory, std::set<std::string>& processedFiles)

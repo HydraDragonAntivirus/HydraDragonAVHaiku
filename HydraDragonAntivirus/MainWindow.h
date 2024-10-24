@@ -11,6 +11,7 @@
 #include <Path.h>
 #include <Message.h>
 #include <String.h>
+#include <thread>
 
 class MainWindow : public BWindow
 {
@@ -34,6 +35,8 @@ public:
     void MonitorClamAV();
     void UpdateVirusDefinitions();
     void ActivateYARA();
+    void StopMonitoring();  //Method to stop monitoring
+    void MessageReceived(BMessage* message) override;
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
 
@@ -47,6 +50,8 @@ private:
 			BFilePanel*		fOpenPanel;
 			BFilePanel*		fSavePanel;
             BFilePanel*     fSelectPanel;
+            bool isMonitoring = false;  // Track if monitoring is active
+            std::thread monitoringThread; // Store the thread reference
 };
 
 #endif
