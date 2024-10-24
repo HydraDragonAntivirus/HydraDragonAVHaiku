@@ -11,7 +11,6 @@
 #include <Path.h>
 #include <View.h>
 #include <cstdlib>
-#include <iostream>
 #include <filesystem>
 #include <vector>
 #include <algorithm>
@@ -23,6 +22,7 @@
 #include <Alert.h>
 #include <string>
 #include <yara.h>
+#include <cstdio>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -146,9 +146,28 @@ void MainWindow::MessageReceived(BMessage* message)
         StartMonitoring();
         break;
 
-    case kMsgQuitApp:
+    case kMsgQuitApp: {
+        // Cleanup YARA rules if they were loaded
+        if (rules != nullptr) {
+            yr_rules_destroy(rules);
+            rules = nullptr; // Set to nullptr to avoid dangling pointer
+        }
+
+        // Kill the clamd process using system call
+        int result = system("kill clamd"); // Kills instance of clamd
+        if (result == 0) {
+            printf("Successfully sent kill command to clamd.\n");
+        } else {
+            perror("Failed to kill clamd");
+        }
+
+        // Optionally, notify the user or log that the application is closing
+        printf("Cleaning up resources and quitting the application...\n");
+
+        // Request the application to quit
         PostMessage(B_QUIT_REQUESTED);
         break;
+    }
 
     case kMsgInstallClamAV:
         InstallClamAV();
@@ -188,7 +207,7 @@ void MainWindow::CreateConfigDirectory() {
     BPath configPath;
     status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
     if (status != B_OK) {
-        std::cerr << "Error finding user settings directory" << std::endl;
+        printf("Error finding user settings directory\n");
         return;
     }
 
@@ -199,12 +218,12 @@ void MainWindow::CreateConfigDirectory() {
     BDirectory configDir(configPath.Path());
     if (configDir.InitCheck() != B_OK) {
         if (create_directory(configPath.Path(), 0755) != B_OK) {
-            std::cerr << "Error creating config directory: " << configPath.Path() << std::endl;
+            printf("Error creating config directory: %s\n", configPath.Path());
         } else {
-            std::cout << "Config directory created: " << configPath.Path() << std::endl;
+            printf("Config directory created: %s\n", configPath.Path());
         }
     } else {
-        std::cout << "Config directory already exists: " << configPath.Path() << std::endl;
+        printf("Config directory already exists: %s\n", configPath.Path());
     }
 }
 
@@ -212,7 +231,7 @@ void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
     // Get the path to the user settings directory
     BPath configPath;
     if (find_directory(B_USER_SETTINGS_DIRECTORY, &configPath) != B_OK) {
-        std::cerr << "Error finding user settings directory" << std::endl;
+        printf("Error finding user settings directory\n");
         return;
     }
 
@@ -223,7 +242,7 @@ void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
     // Open the config file for writing
     BFile configFile(configPath.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
     if (configFile.InitCheck() != B_OK) {
-        std::cerr << "Error opening config file for writing: " << configPath.Path() << std::endl;
+        printf("Error opening config file for writing: %s\n", configPath.Path());
         return;
     }
 
@@ -231,9 +250,9 @@ void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
     BString newPath(selectedPath.Path());
     ssize_t bytesWritten = configFile.Write(newPath.String(), newPath.Length());
     if (bytesWritten != (ssize_t)newPath.Length()) {
-        std::cerr << "Error writing to config file" << std::endl;
+        printf("Error writing to config file\n");
     } else {
-        std::cout << "Configuration file updated with directory: " << newPath.String() << std::endl;
+        printf("Configuration file updated with directory: %s\n", newPath.String());
     }
 }
 
