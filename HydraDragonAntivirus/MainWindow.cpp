@@ -332,6 +332,16 @@ void MainWindow::MessageReceived(BMessage* message)
         break;
     }
 
+    case kMsgIgnore: {
+        _Ignore();
+        break;
+    }
+
+    case kMsgRemove: {
+        _Remove();
+        break;
+    }
+
     case kMsgQuarantineAll: {
         _QuarantineAll();
         break;
@@ -339,11 +349,6 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgIgnoreAll: {
         _IgnoreAll();
-        break;
-    }
-
-    case kMsgRemove: {
-        _Remove();
         break;
     }
 
