@@ -6,6 +6,7 @@
 #include <String.h>
 #include <Path.h>
 #include <FindDirectory.h>
+#include <filesystem>
 #include <iostream>
 #include <fstream>
 #include <sstream>
