@@ -1065,153 +1065,152 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
         }
 
         for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-            // Check if scanning should stop
             if (!isScanning) {
                 printf("Scan has been stopped.\n");
-                return; // Exit if scanning has been stopped
+                return;
             }
 
-            // Ensure the entry exists before processing
             if (!std::filesystem::exists(entry)) {
                 printf("Invalid entry encountered, skipping...\n");
-                continue; // Skip if entry is invalid
+                continue;
             }
 
             if (entry.is_directory()) {
-                // Recursively scan subdirectories
                 NormalScan(entry.path().string(), processedFiles);
             } else if (entry.is_regular_file()) {
-                std::string filename = entry.path().filename().string(); // Only get the filename
-                std::string fullPath = entry.path().string(); // Full path for length check
+                std::string filename = entry.path().filename().string();
+                std::string fullPath = entry.path().string();
 
                 if (fullPath.length() > MAX_PATH_LENGTH) {
                     printf("File path too long: %s, skipping...\n", fullPath.c_str());
-                    continue; // Skip this file
+                    continue;
                 }
 
                 if (processedFiles.find(fullPath) != processedFiles.end()) {
-                    continue; // Skip if already processed
+                    continue;
                 }
 
-                processedFiles.insert(fullPath); // Mark this file as processed
+                processedFiles.insert(fullPath);
 
-                // Check for invalid extensions (e.g., starting with a dot)
                 if (filename[0] == '.') {
                     printf("Invalid extension, skipping file: %s\n", fullPath.c_str());
-                    continue; // Skip invalid files
+                    continue;
                 }
 
-                // Check for multiple extensions (e.g., filename.ext1.ext2)
                 size_t dotCount = std::count(filename.begin(), filename.end(), '.');
                 if (dotCount > 1) {
                     printf("File has multiple extensions, skipping: %s\n", fullPath.c_str());
-                    continue; // Skip files with multiple extensions
+                    continue;
                 }
 
-                // Ransomware check
                 std::string lastExtension = filename.substr(filename.find_last_of('.') + 1);
                 std::string previousExtension = filename.substr(filename.find_last_of('.', filename.find_last_of('.') - 1) + 1);
                 
-                // Check if last extension is known
                 bool isKnownExtension = std::find(KnownExtensions.begin(), KnownExtensions.end(), lastExtension) != KnownExtensions.end();
                 bool isPreviousKnown = std::find(KnownExtensions.begin(), KnownExtensions.end(), previousExtension) != KnownExtensions.end();
-                
+
                 if (!isKnownExtension && isPreviousKnown) {
                     printf("Potential ransomware file found (unknown last extension): %s\n", fullPath.c_str());
-                    // Handle ransomware detection without auto quarantine
-                    if (!fFileListView->HasItem(filename.c_str())) {
-                        fFileListView->AddItem(filename.c_str()); // Add to file list view
+
+                    bool alreadyInList = false;
+                    for (int32 i = 0; i < fFileListView->CountItems(); ++i) {
+                        BStringItem* item = dynamic_cast<BStringItem*>(fFileListView->ItemAt(i));
+                        if (item && item->Text() == filename.c_str()) {
+                            alreadyInList = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyInList) {
+                        fFileListView->AddItem(new BStringItem(filename.c_str()));
                         fStatusView->Insert(("Detected potential ransomware: " + filename).c_str());
                     }
                     continue;
                 }
 
-                // Scan with ClamAV if enabled
                 if (clamavEnabled) {
                     std::string clamScanCommand = "clamdscan --no-summary " + fullPath;
-
-                    // Use popen to execute the command and read output
                     FILE* pipe = popen(clamScanCommand.c_str(), "r");
                     if (!pipe) {
                         perror("popen failed");
-                        continue; // Skip this file and move on
+                        continue;
                     }
 
                     char buffer[128];
                     std::string output;
                     while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-                        output += buffer; // Collect output from the command
+                        output += buffer;
                     }
-                    int result = pclose(pipe); // Close the pipe and get the exit code
+                    int result = pclose(pipe);
 
                     std::string virusName;
 
-                    if (result != 0) {
-                        // Check if the output contains "FOUND"
-                        if (output.find("FOUND") != std::string::npos) {
-                            // Extract virus name from the output
-                            virusName = output.substr(0, output.find(" FOUND")); // Get the part before "FOUND"
-                        }
+                    if (result != 0 && output.find("FOUND") != std::string::npos) {
+                        virusName = output.substr(0, output.find(" FOUND"));
                     }
 
                     if (virusName.empty()) {
-                        // The scan was successful and the file is clean
                         printf("File is clean: %s\n", fullPath.c_str());
                     } else {
-                        // Handle virus detection
-                        bool isPUA = virusName.rfind("PUA", 0) == 0; // Check if virusName starts with "PUA"
-                        std::string type = isPUA ? "PUA" : "Virus"; // Set type based on check
+                        bool isPUA = virusName.rfind("PUA", 0) == 0;
+                        std::string type = isPUA ? "PUA" : "Virus";
 
-                        // Notify the user about the detected threat
                         std::string alertMessage = type + " detected: " + virusName + " in file: " + fullPath;
-                        fStatusView->Insert(alertMessage.c_str()); // Update status view
+                        fStatusView->Insert(alertMessage.c_str());
 
-                        // Check if auto quarantine is enabled
                         if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
-                            _Quarantine(fullPath); // Pass the file path to quarantine the file
+                            _Quarantine(fullPath);
                         } else {
-                            // Check if this detection is already in the file list view
-                            if (!fFileListView->HasItem(virusName.c_str())) {
-                                fFileListView->AddItem(virusName.c_str()); // Add to file list view
+                            bool alreadyInList = false;
+                            for (int32 i = 0; i < fFileListView->CountItems(); ++i) {
+                                BStringItem* item = dynamic_cast<BStringItem*>(fFileListView->ItemAt(i));
+                                if (item && item->Text() == virusName.c_str()) {
+                                    alreadyInList = true;
+                                    break;
+                                }
+                            }
+
+                            if (!alreadyInList) {
+                                fFileListView->AddItem(new BStringItem(virusName.c_str()));
                                 fStatusView->Insert(("Detected " + type + ": " + virusName).c_str());
                             }
                         }
                     }
                 }
 
-                // Scan with YARA if enabled
                 if (yaraEnabled && rules != nullptr) {
-                    // Scanning with YARA
-                    int matches = 0; // To store the number of matches
-                    int yaraResult = yr_rules_scan_file(rules, fullPath.c_str(), &matches, nullptr, nullptr, 0); // Pass matches directly
+                    int matches = 0;
+                    int yaraResult = yr_rules_scan_file(rules, fullPath.c_str(), &matches, nullptr, nullptr, 0);
 
-                    // Check for YARA results
-                    if (yaraResult == ERROR_SUCCESS) {
-                        if (matches > 0) {
-                            // Handle the case where matches were found
-                            std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
-                            if (exclusions.find(matchedRule) == exclusions.end()) {
-                                // If the matched rule is not in exclusions, notify the user
-                                std::string yaraAlertMessage = "YARA rule matched for file: " + fullPath + " - Rule: " + matchedRule;
-                                fStatusView->Insert(yaraAlertMessage.c_str()); // Update status view
+                    if (yaraResult == ERROR_SUCCESS && matches > 0) {
+                        std::string matchedRule = GetMatchedRule();
 
-                                // Check if auto quarantine is enabled
-                                if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
-                                    _Quarantine(fullPath); // Pass the file path to quarantine the file
-                                } else {
-                                    // Check if this detection is already in the file list view
-                                    if (!fFileListView->HasItem(matchedRule.c_str())) {
-                                        fFileListView->AddItem(matchedRule.c_str()); // Add to file list view
-                                        fStatusView->Insert(("Matched rule: " + matchedRule).c_str());
+                        if (exclusions.find(matchedRule) == exclusions.end()) {
+                            std::string yaraAlertMessage = "YARA rule matched for file: " + fullPath + " - Rule: " + matchedRule;
+                            fStatusView->Insert(yaraAlertMessage.c_str());
+
+                            if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
+                                _Quarantine(fullPath);
+                            } else {
+                                bool alreadyInList = false;
+                                for (int32 i = 0; i < fFileListView->CountItems(); ++i) {
+                                    BStringItem* item = dynamic_cast<BStringItem*>(fFileListView->ItemAt(i));
+                                    if (item && item->Text() == matchedRule.c_str()) {
+                                        alreadyInList = true;
+                                        break;
                                     }
                                 }
-                            } else {
-                                printf("Matched rule %s is excluded for file: %s\n", matchedRule.c_str(), fullPath.c_str());
-                                fStatusView->Insert(("Matched rule " + matchedRule + " is excluded for file: " + fullPath).c_str());
+
+                                if (!alreadyInList) {
+                                    fFileListView->AddItem(new BStringItem(matchedRule.c_str()));
+                                    fStatusView->Insert(("Matched rule: " + matchedRule).c_str());
+                                }
                             }
+                        } else {
+                            printf("Matched rule %s is excluded for file: %s\n", matchedRule.c_str(), fullPath.c_str());
+                            fStatusView->Insert(("Matched rule " + matchedRule + " is excluded for file: " + fullPath).c_str());
                         }
                     } else {
-                        // Handle other errors from YARA
                         printf("YARA scan error: %d\n", yaraResult);
                     }
                 }
