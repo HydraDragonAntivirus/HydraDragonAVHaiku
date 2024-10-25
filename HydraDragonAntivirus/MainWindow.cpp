@@ -1,4 +1,4 @@
-// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove etc.
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections etc.
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
@@ -28,6 +28,7 @@
 #include <iostream>
 #include <ScrollView.h>
 #include <CheckBox.h> // Include for BCheckBox
+#include <ListView.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -61,6 +62,7 @@ static const uint32 kMsgAutoQuarantineCheck = 'aQnt'; // Message for enabling/di
 static const uint32 kMsgQuarantine = 'qurn';             // Message for quarantining a detected threat
 static const uint32 kMsgIgnore = 'igor';                  // Message for ignoring a detected threat
 static const uint32 kMsgSelectDirectory = 'seld';        // Message for selecting a directory
+static const uint32 kMsgFileListViewSelection = 'flsv'; // Message for selecting an item in the file list view
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -112,10 +114,21 @@ MainWindow::MainWindow()
     // Directory selection button
     BButton* fSelectDirectoryButton = new BButton("selectDirectoryButton", "Select Directory", new BMessage('seld'));
 
+    // Create the file list view for displaying detected threats
+    fFileListView = new BListView("fileListView");
+    fFileListView->SetSelectionMessage(new BMessage('flsv')); // Set a message for item selection
+
+    // Create a scroll view for the file list view
+    BScrollView* fileListScrollView = new BScrollView("fileListScrollView", fFileListView,
+                                                       B_FOLLOW_LEFT | B_FOLLOW_TOP,
+                                                       true,  // Enable horizontal scroll
+                                                       true);  // Enable vertical scroll
+
     // Set the layout
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .Add(menuBar)
         .Add(scrollView)
+        .Add(fileListScrollView) // Add the file list view scroll
         .Add(fRansomwareCheckBox)  // Add the ransomware check checkbox
         .Add(fYaraCheckBox)        // Add the YARA check checkbox
         .Add(fClamavCheckBox)      // Add the ClamAV check checkbox
@@ -396,6 +409,16 @@ void MainWindow::MessageReceived(BMessage* message)
         // Handle enabling/disabling auto quarantine
         bool autoQuarantineEnabled = message->FindBool("value", false);
         printf("Auto quarantine %s\n", autoQuarantineEnabled ? "enabled" : "disabled");
+        break;
+    }
+
+    case kMsgFileListViewSelection: {
+        // Handle the selection of a file in the file list view
+        std::string selectedFilePath = GetSelectedFilePath(); // Implement this function to retrieve the selected file path
+        if (!selectedFilePath.empty()) {
+            // For example, you might want to update a status view or take some action based on the selection
+            printf("File selected: %s\n", selectedFilePath.c_str());
+        }
         break;
     }
 
@@ -1061,10 +1084,15 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
                 // Check for known ransomware extensions
                 if (std::find(KnownRansomwareExtensions.begin(), KnownRansomwareExtensions.end(), filename) != KnownRansomwareExtensions.end()) {
                     printf("Potential ransomware file found: %s\n", fullPath.c_str());
-                    // Handle ransomware detection (e.g., alert the user)
+                    // Handle ransomware detection
                     if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
-                        // Auto quarantine logic
-                        _Quarantine(); // Quarantine the file
+                        _Quarantine(fullPath); // Pass the file path to quarantine the file
+                    } else {
+                        // Check if this detection is already in the file list view
+                        if (!fFileListView->HasItem(filename.c_str())) {
+                            fFileListView->AddItem(filename.c_str()); // Add to file list view
+                            fStatusView->Insert(("Detected potential ransomware: " + filename).c_str());
+                        }
                     }
                     continue;
                 }
@@ -1111,9 +1139,13 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
 
                         // Check if auto quarantine is enabled
                         if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
-                            // Auto quarantine logic
-                            _Quarantine(); // Quarantine the file
+                            _Quarantine(fullPath); // Pass the file path to quarantine the file
                         } else {
+                            // Check if this detection is already in the file list view
+                            if (!fFileListView->HasItem(virusName.c_str())) {
+                                fFileListView->AddItem(virusName.c_str()); // Add to file list view
+                                fStatusView->Insert(("Detected " + type + ": " + virusName).c_str());
+                            }
                         }
                     }
                 }
@@ -1133,6 +1165,17 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
                                 // If the matched rule is not in exclusions, notify the user
                                 std::string yaraAlertMessage = "YARA rule matched for file: " + fullPath + " - Rule: " + matchedRule;
                                 fStatusView->Insert(yaraAlertMessage.c_str()); // Update status view
+
+                                // Check if auto quarantine is enabled
+                                if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
+                                    _Quarantine(fullPath); // Pass the file path to quarantine the file
+                                } else {
+                                    // Check if this detection is already in the file list view
+                                    if (!fFileListView->HasItem(matchedRule.c_str())) {
+                                        fFileListView->AddItem(matchedRule.c_str()); // Add to file list view
+                                        fStatusView->Insert(("Matched rule: " + matchedRule).c_str());
+                                    }
+                                }
                             } else {
                                 printf("Matched rule %s is excluded for file: %s\n", matchedRule.c_str(), fullPath.c_str());
                                 fStatusView->Insert(("Matched rule " + matchedRule + " is excluded for file: " + fullPath).c_str());
