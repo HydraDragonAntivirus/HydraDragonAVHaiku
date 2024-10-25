@@ -506,14 +506,6 @@ void MainWindow::UpdateVirusDefinitions()
     }
 }
 
-bool IsClamDRunning() {
-    // Check if the ClamAV daemon is running using the `ps` command
-    int result = system("ps | grep -w clamd | grep -v grep > /dev/null 2>&1");
-
-    // The command returns 0 if the process is found, 1 if not found
-    return (result == 0);
-}
-
 void MainWindow::InstallClamAV() {
     // Check if ClamAV is already installed
     bool isInstalled = IsClamAVInstalled();
@@ -598,23 +590,11 @@ std::set<std::string> MainWindow::LoadExclusionRules(const std::string& filePath
 }
 
 bool IsClamDRunning() {
-    // Create a list to hold the process information
-    BList processList;
-    // Retrieve the process information
-    int32 processCount = get_process_info(NULL, &processList);
+    // Check if the ClamAV daemon is running using the `ps` command
+    int result = system("ps | grep -w clamd | grep -v grep > /dev/null 2>&1");
 
-    // Iterate through the processes
-    for (int32 i = 0; i < processCount; i++) {
-        // Get process info for the current index
-        process_info info;
-        get_process_info(processList.ItemAt(i)->id, &info);
-        
-        // Check if the name of the process matches "clamd"
-        if (info.name == "clamd") {
-            return true; // ClamAV is running
-        }
-    }
-    return false; // ClamAV is not running
+    // The command returns 0 if the process is found, 1 if not found
+    return (result == 0);
 }
 
 void MainWindow::MonitorClamAV() {
