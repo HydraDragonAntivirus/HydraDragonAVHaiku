@@ -92,6 +92,8 @@ private:
     bool yaraEnabled;
     bool ransomwareEnabled;
 
+    bool fAlertShown = false; // Flag to track if an alert has been shown
+
     bool isMonitoring = false;  // Track if monitoring is active
     std::thread monitoringThread; // Store the thread reference
 

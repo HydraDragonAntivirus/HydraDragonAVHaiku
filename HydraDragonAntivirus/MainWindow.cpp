@@ -1,4 +1,4 @@
-// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected add new change detector auto update definations when program start good interface etc. 
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected add new change detector auto update definations when program start good interface show selected directory show scanned path add cleanup button etc. 
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
@@ -61,7 +61,6 @@ static const uint32 kMsgClamAVCheck = 'cchk'; // Message for enabling/disabling 
 static const uint32 kMsgAutoQuarantineCheck = 'aQnt'; // Message for enabling/disabling auto quarantine
 static const uint32 kMsgQuarantine = 'qurn';             // Message for quarantining a detected threat
 static const uint32 kMsgIgnore = 'igor';                  // Message for ignoring a detected threat
-static const uint32 kMsgSelectDirectory = 'seld';        // Message for selecting a directory
 static const uint32 kMsgFileListViewSelection = 'flsv'; // Message for selecting an item in the file list view
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
@@ -70,7 +69,7 @@ static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 std::vector<std::string> KnownExtensions = getKnownExtensions();
 
 MainWindow::MainWindow() 
-    : BWindow(BRect(100, 100, 500, 540), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
+    : BWindow(BRect(100, 100, 500, 510), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
     bool isScanning(false); // Initialize the scanning flag
@@ -116,9 +115,6 @@ MainWindow::MainWindow()
     fRemoveButton = new BButton("removeButton", "Remove", new BMessage('dlte'));
     fRemoveAllButton = new BButton("removeAllButton", "Remove All", new BMessage('dall'));
 
-    // Directory selection button
-    BButton* fSelectDirectoryButton = new BButton("selectDirectoryButton", "Select Directory", new BMessage('seld'));
-
     // Create the file list view for displaying detected threats
     fFileListView = new BListView("fileListView");
     fFileListView->SetSelectionMessage(new BMessage('flsv')); // Set a message for item selection
@@ -148,7 +144,6 @@ MainWindow::MainWindow()
         .Add(fIgnoreAllButton)     // Add the Ignore All button
         .Add(fRemoveButton)        // Add the Remove button
         .Add(fRemoveAllButton)     // Add the Remove All button
-        .Add(fSelectDirectoryButton) // Add the Select Directory button
         .AddGlue()
         .End();
 
@@ -337,6 +332,25 @@ void MainWindow::MessageReceived(BMessage* message)
                                        "OK");
             alert->Go();  // Display failure message
         }
+        break;
+    }
+
+    case kMsgStartScan: {
+        std::set<std::string> processedFiles;
+    
+         // Check if a directory has been selected
+        if (fSelectedDirectory.IsEmpty()) {
+            // Open the directory selection dialog
+            BFilePanel* filePanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), nullptr, B_DIRECTORY_NODE, false);
+            filePanel->Show();
+            break; // Exit to allow user to select a directory
+        }
+
+        bool isScanning = true; // Update the scanning flag
+        NormalScan(fSelectedDirectory.String(), processedFiles); // Start normal scan
+    
+        // Reset alert shown flag if scan is successful
+        fAlertShown = false;
         break;
     }
 
