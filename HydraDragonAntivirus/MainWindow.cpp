@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "KnownExtensions.h"
+#include "QuarantineManager.h"
 
 #include <Application.h>
 #include <Catalog.h>

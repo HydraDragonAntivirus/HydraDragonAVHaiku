@@ -41,6 +41,7 @@ public:
     void ActivateYARA();
     void StopMonitoring();  // Method to stop monitoring
     void ShowAlert(const std::string& title, const std::string& message);
+    void LogQuarantineDetails(const std::string& logFilePath, const std::string& filePath, const std::string& reason, bool isPUA);
     bool IsClamDRunning();
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 
