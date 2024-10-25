@@ -695,6 +695,16 @@ void MainWindow::ActivateYARA() {
     alert->Go();
 }
 
+class ClamAVThread : public BThread {
+public:
+    ClamAVThread() : BThread("ClamAV Daemon Thread") {}
+
+    void Run() override {
+        // Start the clamd daemon
+        system("clamd");
+    }
+};
+
 void MainWindow::ActivateClamAV() {
     printf("Activating ClamAV...\n");
 
@@ -713,22 +723,10 @@ void MainWindow::ActivateClamAV() {
                                    "OK");
     warnAlert->Go();  // Display warning message
 
-    // Start the clamd daemon
-    int result = system("clamd"); 
+    // Create and start the ClamAV thread
+    ClamAVThread* clamAVThread = new ClamAVThread();
+    clamAVThread->Resume(); // Start the thread to run clamd
 
-    if (result == 0) {
-        // Successful start
-        BAlert* alert = new BAlert("ClamAV Activation", 
-                                   "ClamAV daemon activated successfully.", 
-                                   "OK");
-        alert->Go();  // Display success message
-    } else {
-        // Failed to start
-        BAlert* alert = new BAlert("ClamAV Activation", 
-                                   "Failed to activate ClamAV daemon.", 
-                                   "OK");
-        alert->Go();  // Display failure message
-    }
 }
 
 void MainWindow::UpdateVirusDefinitions()
