@@ -25,7 +25,6 @@
 #include <cstdio>
 #include <iostream>
 #include <List.h>
-#include <Kernel.h>
 #include <fstream>
 
 #undef B_TRANSLATION_CONTEXT
@@ -463,6 +462,12 @@ void MainWindow::ActivateClamAV() {
         alert->Go();  // Display message
         return; // Exit if ClamAV is not installed
     }
+
+    // Warn the user that starting ClamAV may take some time
+    BAlert* warnAlert = new BAlert("ClamAV Activation", 
+                                   "Activating ClamAV may take some time. Please wait...", 
+                                   "OK");
+    warnAlert->Go();  // Display warning message
 
     // Start the clamd daemon
     int result = system("clamd"); 
