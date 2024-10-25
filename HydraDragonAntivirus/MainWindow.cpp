@@ -602,14 +602,14 @@ std::set<std::string> MainWindow::LoadExclusionRules(const std::string& filePath
     std::ifstream file(filePath);
     
     if (!file.is_open()) {
-        std::cerr << "Error opening exclusion rules file: " << filePath << std::endl;
+        printf("Error opening exclusion rules file: %s\n", filePath.c_str());
         return exclusions; // Return empty set on error
     }
 
     std::string line;
     while (std::getline(file, line)) {
         // Optionally trim whitespace from the line
-        line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
+        line.erase(std::remove_if(line.begin(), line.end(), ::isspace), line.end());
         
         if (!line.empty()) {
             exclusions.insert(line); // Add the rule to the set
@@ -726,33 +726,34 @@ void MainWindow::MonitorClamAV() {
                     int matches = 0; // To store the number of matches
                     int yaraResult = yr_rules_scan_file(rules, file.c_str(), &matches, nullptr, nullptr);
 
+                    // Check for YARA results
                     if (yaraResult == ERROR_SUCCESS) {
-                        // Successful scan, handle accordingly
-                    } else if (yaraResult == ERROR_MATCH) {
-                        // YARA rule matched
-                        std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
-                        if (exclusions.find(matchedRule) == exclusions.end()) {
-                            // If the matched rule is not in exclusions, move to quarantine
-                            std::string yaraAlertMessage = "YARA rule matched for file: " + file + " - Rule: " + matchedRule;
-                            fStatusView->Insert(yaraAlertMessage.c_str()); // Update status view
+                        if (matches > 0) {
+                            // Handle the case where matches were found
+                            std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
+                            if (exclusions.find(matchedRule) == exclusions.end()) {
+                                // If the matched rule is not in exclusions, move to quarantine
+                                std::string yaraAlertMessage = "YARA rule matched for file: " + file + " - Rule: " + matchedRule;
+                                fStatusView->Insert(yaraAlertMessage.c_str()); // Update status view
 
-                            // Move to quarantine
-                            std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
-                            try {
-                                std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
-                                printf("Moved to quarantine due to YARA match: %s\n", file.c_str());
+                                // Move to quarantine
+                                std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
+                                try {
+                                    std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
+                                    printf("Moved to quarantine due to YARA match: %s\n", file.c_str());
 
-                                // Log the quarantine details including the original file path
-                                LogQuarantineDetails(configPath.Path(), file, matchedRule, true); // Assume YARA matches as PUA for logging
+                                    // Log the quarantine details including the original file path
+                                    LogQuarantineDetails(configPath.Path(), file, matchedRule, true); // Assume YARA matches as PUA for logging
 
-                                // Show a warning to the user about the quarantine in a non-blocking manner
-                                ShowAlert("File Quarantined", "A file has been quarantined due to a YARA rule match: " + file);
-                            } catch (const std::filesystem::filesystem_error& e) {
-                                printf("Error moving file to quarantine: %s\n", e.what());
+                                    // Show a warning to the user about the quarantine in a non-blocking manner
+                                    ShowAlert("File Quarantined", "A file has been quarantined due to a YARA rule match: " + file);
+                                } catch (const std::filesystem::filesystem_error& e) {
+                                    printf("Error moving file to quarantine: %s\n", e.what());
+                                }
+                            } else {
+                                printf("Matched rule %s is excluded for file: %s\n", matchedRule.c_str(), file.c_str());
+                                fStatusView->Insert(("Matched rule " + matchedRule + " is excluded for file: " + file).c_str());
                             }
-                        } else {
-                            std::string exclusionMessage = "Matched rule " + matchedRule + " is excluded for file: " + file;
-                            fStatusView->Insert(exclusionMessage.c_str()); // Update status view about exclusion
                         }
                     } else {
                         // Handle other errors from YARA
