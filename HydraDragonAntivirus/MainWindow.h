@@ -15,6 +15,7 @@
 #include <thread>
 #include <yara.h>
 #include <CheckBox.h> // Include for BCheckBox
+#include <ListView.h> // Include for BListView (or BFileListView if you're using that)
 
 class MainWindow : public BWindow
 {
@@ -81,7 +82,7 @@ private:
     void _QuarantineAll();             // Declaration for the Quarantine All action
     void _RemoveAll();                 // Method to handle remove all action
     void _IgnoreAll();                 // Method to handle ignore all action
-    void  NormalScan(const std::string& directory, std::set<std::string>& processedFiles);
+    void NormalScan(const std::string& directory, std::set<std::string>& processedFiles);
 
     // Engine states
     bool clamavEnabled;
@@ -97,8 +98,11 @@ private:
 
     std::set<std::string> exclusions; // For storing exclusion rules
 
-    std::string MainWindow::GetSelectedFilePath;
-    std::set<std::string> GetSelectedFilePaths;
+    std::string GetSelectedFilePath(); // Function to get the selected file path
+    std::set<std::string> GetSelectedFilePaths(); // Function to get selected file paths
+
+    // File List View to display files
+    BListView* fFileListView; // Change this to BFileListView if needed
 
     // Function to check ClamAV installation
     bool IsClamAVInstalled();
