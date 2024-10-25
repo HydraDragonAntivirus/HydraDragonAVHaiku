@@ -405,7 +405,7 @@ void MainWindow::ActivateYARA() {
     printf("Activating YARA...\n");
 
     // Check if the compiled_rule.yrc file exists
-    std::string yaraRulesPath = "compiled_rule.yrc"; // Update with the actual path
+    std::string yaraRulesPath = "yara/compiled_rule.yrc";
     if (!std::filesystem::exists(yaraRulesPath)) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "YARA rules file not found.", 
@@ -425,40 +425,16 @@ void MainWindow::ActivateYARA() {
         return; // Exit if initialization fails
     }
 
-    // Compile YARA rules
-    YR_COMPILER* compiler;
-    if (yr_compiler_create(&compiler) != ERROR_SUCCESS) {
-        BAlert* alert = new BAlert("YARA Activation", 
-                                   "Failed to create YARA compiler.", 
-                                   "OK", nullptr, nullptr, 
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
-        alert->Go();
-        yr_finalize();
-        return; // Exit if compiler creation fails
-    }
-
-    if (yr_compiler_add_file(compiler, yaraRulesPath.c_str(), nullptr) != ERROR_SUCCESS) {
-        BAlert* alert = new BAlert("YARA Activation", 
-                                   "Failed to compile YARA rules.", 
-                                   "OK", nullptr, nullptr, 
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
-        alert->Go();
-        yr_compiler_destroy(compiler);
-        yr_finalize();
-        return; // Exit if compilation fails
-    }
-
-    // Finalize the compilation and get the rules
+    // Load YARA rules from compiled file
     YR_RULES* rules;
-    if (yr_compiler_get_rules(compiler, &rules) != ERROR_SUCCESS) {
+    if (yr_load_rules(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
-                                   "Failed to retrieve YARA rules.", 
+                                   "Failed to load YARA rules.", 
                                    "OK", nullptr, nullptr, 
                                    B_WIDTH_AS_USUAL, B_WARNING_ALERT);
         alert->Go();
-        yr_compiler_destroy(compiler);
-        yr_finalize();
-        return; // Exit if retrieval fails
+        yr_finalize(); // Cleanup on error
+        return; // Exit if loading rules fails
     }
 
     // Inform the user of the result
