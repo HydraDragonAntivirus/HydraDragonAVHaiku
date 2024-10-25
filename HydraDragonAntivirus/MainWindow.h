@@ -16,6 +16,7 @@
 #include <yara.h>
 #include <CheckBox.h> // Include for BCheckBox
 #include <ListView.h> // Include for BListView (or BFileListView if you're using that)
+#include <Directory.h>
 
 class MainWindow : public BWindow
 {
@@ -51,7 +52,7 @@ public:
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
-    BString fSelectedDirectory; // Member variable to hold the selected directory
+    BString SelectedDirectory; // Member variable to hold the selected directory
 
 private:
     BMenuBar* _BuildMenu();

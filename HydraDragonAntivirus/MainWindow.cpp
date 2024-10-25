@@ -449,10 +449,24 @@ void MainWindow::MessageReceived(BMessage* message)
 void MainWindow::DirectorySelected(BMessage* message) {
     entry_ref dirRef;
     if (message->FindRef("refs", &dirRef) == B_OK) {
-        BDirectory dir(&dirRef);
-        if (dir.InitCheck() == B_OK) {
-            SelectedDirectory = dir.Path(); // Store the selected directory path
+        BEntry entry(&dirRef);
+        if (entry.InitCheck() == B_OK) {
+            // Create a BDirectory from the BEntry
+            BDirectory dir(&entry);
+            if (dir.InitCheck() == B_OK) {
+                // Store the selected directory path
+                BPath path;
+                if (entry.GetPath(&path) == B_OK) {
+                    SelectedDirectory = path.Path(); // Store the selected directory path as a string
+                }
+            } else {
+                printf("Error initializing BDirectory\n");
+            }
+        } else {
+            printf("Error initializing BEntry\n");
         }
+    } else {
+        printf("No entry_ref found in message\n");
     }
 }
 
