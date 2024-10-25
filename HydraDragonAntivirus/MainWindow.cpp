@@ -143,7 +143,7 @@ MainWindow::MainWindow()
         .Add(fYaraCheckBox)        // Add the YARA check checkbox
         .Add(fClamAVCheckBox)      // Add the ClamAV check checkbox
         .Add(fScanButton)          // Add the Scan button
-        .Add(fStopButton)          // Add the Scan button
+        .Add(fStopButton)          // Add the Stop button
         .Add(fQuarantineAllButton) // Add the Quarantine All button
         .Add(fIgnoreAllButton)     // Add the Ignore All button
         .Add(fRemoveButton)        // Add the Remove button
