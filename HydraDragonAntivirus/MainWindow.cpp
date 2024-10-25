@@ -510,9 +510,7 @@ void MainWindow::InstallClamAV() {
     BAlert* warningAlert = new BAlert("Warning", 
                                       "The installation process may take some time. Do you want to proceed with the installation?", 
                                       "Cancel", 
-                                      "OK", 
-                                      B_WIDTH_AS_USUAL, 
-                                      B_WARNING_ALERT);
+                                      "OK");
 
     // Display the warning alert and check the user's response
     int32 buttonIndex = warningAlert->Go();
@@ -526,9 +524,7 @@ void MainWindow::InstallClamAV() {
         BAlert* reinstallAlert = new BAlert("Reinstall ClamAV", 
                                              "ClamAV is already installed. Do you want to reinstall it?", 
                                              "No", 
-                                             "Yes", 
-                                             B_WIDTH_AS_USUAL, 
-                                             B_INFO_ALERT);
+                                             "Yes");
         // Check the user's choice about reinstallation
         int32 reinstallIndex = reinstallAlert->Go();
         if (reinstallIndex == 0) {
