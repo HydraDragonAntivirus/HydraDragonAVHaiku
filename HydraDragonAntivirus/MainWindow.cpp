@@ -622,6 +622,11 @@ void MainWindow::MonitorClamAV() {
     std::set<std::string> processedFiles; 
     std::string monitorDir = monitoringDirectory.String(); // Convert BString to std::string
 
+    // Define path for the quarantine log
+    BPath configPath;
+    find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
+    configPath.Append("HydraDragonAntivirus/quarantine_log.txt");
+
     while (true) {
         // Get the list of files in the directory
         std::vector<std::string> currentFiles;
@@ -665,8 +670,12 @@ void MainWindow::MonitorClamAV() {
                     // The scan was successful and the file is clean
                     processedFiles.insert(file); // Mark this file as processed
                 } else {
-                    // Notify the user about the virus detected
-                    std::string alertMessage = "Virus detected: " + virusName + " in file: " + file;
+                    // Check if the detected virus is a PUA
+                    bool isPUA = virusName.rfind("PUA", 0) == 0; // Check if virusName starts with "PUA"
+                    std::string type = isPUA ? "PUA" : "Virus"; // Set type based on check
+
+                    // Notify the user about the detected threat
+                    std::string alertMessage = type + " detected: " + virusName + " in file: " + file;
                     fStatusView->Insert(alertMessage.c_str()); // Update status view
 
                     // Move the file to quarantine
@@ -674,6 +683,9 @@ void MainWindow::MonitorClamAV() {
                     try {
                         std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
                         printf("Moved to quarantine: %s\n", file.c_str());
+
+                        // Log the quarantine details
+                        LogQuarantineDetails(configPath.Path(), file, virusName, isPUA);
                     } catch (const std::filesystem::filesystem_error& e) {
                         printf("Error moving file to quarantine: %s\n", e.what());
                     }
@@ -681,8 +693,13 @@ void MainWindow::MonitorClamAV() {
 
                 // Now, scan the same file with YARA rules if they are loaded
                 if (rules != nullptr) {
-                    int yaraResult = yr_rules_scan_file(rules, file.c_str(), nullptr, nullptr, nullptr);
-                    if (yaraResult > 0) {
+                    // Scanning with YARA
+                    int matches = 0; // To store the number of matches
+                    int yaraResult = yr_rules_scan_file(rules, file.c_str(), &matches, nullptr, nullptr);
+
+                    if (yaraResult == ERROR_SUCCESS) {
+                        // Successful scan, handle accordingly
+                    } else if (yaraResult == ERROR_MATCH) {
                         // YARA rule matched
                         std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
                         if (exclusions.find(matchedRule) == exclusions.end()) {
@@ -695,6 +712,9 @@ void MainWindow::MonitorClamAV() {
                             try {
                                 std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
                                 printf("Moved to quarantine due to YARA match: %s\n", file.c_str());
+
+                                // Log the quarantine details
+                                LogQuarantineDetails(configPath.Path(), file, matchedRule, true); // Assume YARA matches as PUA for logging
                             } catch (const std::filesystem::filesystem_error& e) {
                                 printf("Error moving file to quarantine: %s\n", e.what());
                             }
@@ -702,10 +722,25 @@ void MainWindow::MonitorClamAV() {
                             std::string exclusionMessage = "Matched rule " + matchedRule + " is excluded for file: " + file;
                             fStatusView->Insert(exclusionMessage.c_str()); // Update status view about exclusion
                         }
+                    } else {
+                        // Handle other errors from YARA
+                        printf("YARA scan error: %d\n", yaraResult);
                     }
                 }
             }
         }
+    }
+}
+
+// Function to log details of quarantined files
+void MainWindow::LogQuarantineDetails(const std::string& logFilePath, const std::string& filePath, const std::string& reason, bool isPUA) {
+    std::ofstream logFile(logFilePath, std::ios::app); // Open the log file in append mode
+    if (logFile.is_open()) {
+        std::string type = isPUA ? "PUA" : "Virus";
+        logFile << "File: " << filePath << ", Reason: " << reason << ", Type: " << type << ", Timestamp: " << std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()) << "\n";
+        logFile.close(); // Close the log file
+    } else {
+        printf("Error opening log file: %s\n", logFilePath.c_str());
     }
 }
 
