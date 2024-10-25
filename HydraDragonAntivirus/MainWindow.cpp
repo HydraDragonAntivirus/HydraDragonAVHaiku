@@ -24,7 +24,6 @@
 #include <yara.h>
 #include <cstdio>
 #include <iostream>
-#include <Thread.h> // Include for threading
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"

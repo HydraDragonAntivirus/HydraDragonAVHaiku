@@ -72,8 +72,8 @@ private:
         kMsgStopMonitor = 'spmo',
         kMsgStartClamAVMonitor = 'stcm',
         kMsgStopClamAVMonitor = 'spcm',
-        kMsgCheckClamAVInstallation = 'chci'
-        kMsgOpenQuarantineManager = 'oqmt'; // Message for opening the Quarantine Manager
+        kMsgCheckClamAVInstallation = 'chci',
+        kMsgOpenQuarantineManager = 'oqmt' // Message for opening the Quarantine Manager
     };
 
     // Function to check ClamAV installation
