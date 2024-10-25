@@ -117,6 +117,8 @@ MainWindow::MainWindow()
     // Create the file list view for displaying detected threats
     fFileListView = new BListView("fileListView");
     fFileListView->SetSelectionMessage(new BMessage('flsv')); // Set a message for item selection
+    fStatusView->SetText("Scan:\n"); // Initialize with a default message
+    fStatusView->SetFontSize(12); // Set font size for better readability
 
     // Create a scroll view for the file list view
     BScrollView* fileListScrollView = new BScrollView("fileListScrollView", fFileListView,
