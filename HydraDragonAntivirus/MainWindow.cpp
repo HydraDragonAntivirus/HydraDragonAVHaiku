@@ -405,7 +405,7 @@ void MainWindow::ActivateYARA() {
     printf("Activating YARA...\n");
 
     // Check if the compiled_rule.yrc file exists
-    std::string yaraRulesPath = "yara/compiled_rule.yrc";
+    std::string yaraRulesPath = "compiled_rule.yrc"; // Update with the actual path
     if (!std::filesystem::exists(yaraRulesPath)) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "YARA rules file not found.", 
@@ -425,15 +425,15 @@ void MainWindow::ActivateYARA() {
         return; // Exit if initialization fails
     }
 
-    // Load YARA rules from compiled file
-    YR_RULES* rules;
-    if (yr_load_rules(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
+    // Load YARA rules
+    YR_RULES* rules = nullptr;
+    if (yr_rules_load(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "Failed to load YARA rules.", 
                                    "OK", nullptr, nullptr, 
                                    B_WIDTH_AS_USUAL, B_WARNING_ALERT);
         alert->Go();
-        yr_finalize(); // Cleanup on error
+        yr_finalize();
         return; // Exit if loading rules fails
     }
 
