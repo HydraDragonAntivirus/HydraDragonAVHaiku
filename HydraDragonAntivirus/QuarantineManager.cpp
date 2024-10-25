@@ -78,7 +78,7 @@ void QuarantineManager::RestoreSelectedFile() {
         quarantinePath.Append("HydraDragonAntivirus/Quarantine"); // Quarantine folder path
         
         BPath restoredFilePath(quarantinePath.Path());
-        restoredFilePath.Append(std::filesystem::path(filePath).filename().string()); // Get the filename to restore
+        restoredFilePath.Append(std::filesystem::path(filePath).filename().string().c_str()); // Get the filename to restore
 
         // Attempt to move the file back to its original location
         try {
@@ -88,7 +88,7 @@ void QuarantineManager::RestoreSelectedFile() {
             fListView->RemoveItem(selectedIndex); // Remove from list view
             quarantinedFiles.erase(quarantinedFiles.begin() + selectedIndex); // Remove from vector
         } catch (const std::filesystem::filesystem_error& e) {
-            BAlert* alert = new BAlert("Error", "Failed to restore the file: " + std::string(e.what()), "OK");
+            BAlert* alert = new BAlert("Error", ("Failed to restore the file: " + std::string(e.what())).c_str(), "OK");
             alert->Go();
         }
     }
@@ -106,7 +106,7 @@ void QuarantineManager::DeleteSelectedFile() {
         quarantinePath.Append("HydraDragonAntivirus/Quarantine"); // Quarantine folder path
         
         BPath fileToDelete(quarantinePath.Path());
-        fileToDelete.Append(std::filesystem::path(filePath).filename().string()); // Get the filename to delete
+        fileToDelete.Append(std::filesystem::path(filePath).filename().string().c_str()); // Get the filename to delete
 
         // Attempt to delete the file
         if (std::filesystem::remove(fileToDelete.Path())) {
