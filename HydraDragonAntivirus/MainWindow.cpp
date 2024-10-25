@@ -1,4 +1,4 @@
-// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected etc. 
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected add new change detector etc. 
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
