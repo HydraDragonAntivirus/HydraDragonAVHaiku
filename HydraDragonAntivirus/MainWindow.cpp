@@ -687,7 +687,7 @@ void MainWindow::MonitorClamAV() {
 
                 // Now, scan the same file with YARA rules if they are loaded
                 if (rules != nullptr) {
-                    int yaraResult = yr_scan_file(file.c_str(), 0, nullptr, nullptr, nullptr);
+                    int yaraResult = yr_rules_scan_file(rules, file.c_str(), nullptr, nullptr, nullptr);
                     if (yaraResult > 0) {
                         // YARA rule matched
                         std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
