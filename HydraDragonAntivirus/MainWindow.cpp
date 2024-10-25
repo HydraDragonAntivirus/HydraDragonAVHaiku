@@ -635,8 +635,13 @@ void MainWindow::RefsReceived(BMessage* message)
 void MainWindow::ActivateYARA() {
     printf("Activating YARA...\n");
 
+    // Get the absolute path for the YARA rules file
+    std::filesystem::path yaraRulesPath = std::filesystem::absolute("yara/compiled_rule.yrc"); // Update with the actual path
+
+    // Print the absolute path for debugging
+    std::cout << "Absolute YARA rules path: " << yaraRulesPath << std::endl;
+
     // Check if the compiled_rule.yrc file exists
-    std::string yaraRulesPath = "yara/compiled_rule.yrc"; // Update with the actual path
     if (!std::filesystem::exists(yaraRulesPath)) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "YARA rules file not found.", 
@@ -1001,8 +1006,24 @@ std::set<std::string> MainWindow::GetSelectedFilePaths()
 }
 
 void MainWindow::_Quarantine(const std::string& filePath) {
-    std::string quarantineDir = "/path/to/quarantine"; // Define your quarantine directory
-    std::filesystem::create_directories(quarantineDir); // Ensure the directory exists
+    BPath configPath;
+    status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &configPath);
+    if (status != B_OK) {
+        printf("Error finding user settings directory\n");
+        return;
+    }
+
+    // Append HydraDragonAntivirus directory name
+    configPath.Append("HydraDragonAntivirus");
+
+    // Define the quarantine directory path
+    configPath.Append("quarantine"); // Append quarantine directory name
+
+    // Convert BPath to std::string for filesystem operations
+    std::string quarantineDir = configPath.Path();
+
+    // Ensure the directory exists
+    std::filesystem::create_directories(quarantineDir);
 
     try {
         std::string fileName = std::filesystem::path(filePath).filename().string();
