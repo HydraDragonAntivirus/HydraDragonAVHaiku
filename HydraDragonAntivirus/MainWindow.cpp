@@ -49,8 +49,8 @@ static const uint32 kMsgActivateYara = 'acty'; // New message for YARA activatio
 static const uint32 kMsgOpenQuarantineManager = 'oqmt'; // Message for opening the Quarantine Manager
 
 // Messages for user actions
-static const uint32 kMsgStartScan = 'stsc'; // Message for starting a scan
-static const uint32 kMsgStopScan = 'stps'; // Message for stopping a scan
+static const uint32 kMsgStartScan = 'scan'; // Message for starting a scan
+static const uint32 kMsgStopScan = 'stop'; // Message for stopping a scan
 static const uint32 kMsgQuarantineAll = 'qral'; // Message for quarantining all threats
 static const uint32 kMsgIgnoreAll = 'igal'; // Message for ignoring all threats
 static const uint32 kMsgRemove = 'dlte'; // Message for deleting a selected threat
@@ -102,8 +102,14 @@ MainWindow::MainWindow()
     fClamAVCheckBox = new BCheckBox("clamavCheck", "Enable ClamAV Engine", new BMessage('cchk'));
     fAutoQuarantineCheckBox = new BCheckBox("autoQuarantineCheckBox", "Enable Auto Quarantine", new BMessage('aQnt'));
 
-    // Scan button
-    fScanButton = new BButton("scanButton", "Scan", new BMessage('scan'));
+    // Create the scan button
+    fScanButton = new BButton("scanButton", "Start Scan", new BMessage('scan'));
+    fScanButton->SetTarget(this); // Set the target to the current window or class instance
+
+    // Create the stop button
+    fStopButton = new BButton("stopButton", "Stop Scan", new BMessage('stop'));
+    fStopButton->SetTarget(this); // Set the target to the current window or class instance
+
 
     // Quarantine buttons
     fQuarantineAllButton = new BButton("quarantineAllButton", "Quarantine All", new BMessage('qral'));
