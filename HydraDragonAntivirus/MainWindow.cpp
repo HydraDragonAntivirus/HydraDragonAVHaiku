@@ -409,8 +409,7 @@ void MainWindow::ActivateYARA() {
     if (!std::filesystem::exists(yaraRulesPath)) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "YARA rules file not found.", 
-                                   "OK", nullptr, nullptr, 
-                                   B_WIDTH_AS_USUAL, B_INFO_ALERT);
+                                   "OK");
         alert->Go();
         return; // Exit if file does not exist
     }
@@ -419,19 +418,17 @@ void MainWindow::ActivateYARA() {
     if (yr_initialize() != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "Failed to initialize YARA.", 
-                                   "OK", nullptr, nullptr, 
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+                                   "OK");
         alert->Go();
         return; // Exit if initialization fails
     }
 
     // Load YARA rules
     YR_RULES* rules;
-    if (yr_load_rules_file(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
+    if (yr_rules_load_file(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "Failed to load YARA rules.", 
-                                   "OK", nullptr, nullptr, 
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+                                   "OK");
         alert->Go();
         yr_finalize();
         return; // Exit if loading rules fails
@@ -440,8 +437,7 @@ void MainWindow::ActivateYARA() {
     // Inform the user of the result
     BAlert* alert = new BAlert("YARA Activation", 
                                "YARA rules activated successfully.", 
-                               "OK", nullptr, nullptr, 
-                               B_WIDTH_AS_USUAL, B_INFO_ALERT);
+                               "OK");
     alert->Go();
 }
 
