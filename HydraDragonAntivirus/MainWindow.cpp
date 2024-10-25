@@ -269,7 +269,7 @@ void MainWindow::MessageReceived(BMessage* message)
         }
 
         // Kill the clamd process using system call
-        int result = system("killall clamd"); // Kills instance of clamd
+        int result = system("kill clamd"); // Kills instance of clamd
         if (result == 0) {
             printf("Successfully sent kill command to clamd.\n");
         } else {
@@ -510,7 +510,7 @@ void MainWindow::StopClamAVMonitoring()
     }
 
     // Kill the clamd process using system call
-    int result = system("killall clamd"); // Kills instance of clamd
+    int result = system("kill clamd"); // Kills instance of clamd
     if (result == 0) {
         printf("Successfully sent kill command to clamd.\n");
     } else {
