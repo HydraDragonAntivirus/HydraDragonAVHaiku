@@ -32,7 +32,7 @@ APP_MIME_SIG = application/x-vnd.EmirhanUcan-HydraDragonAntivirus
 SRCS = App.cpp \
        MainWindow.cpp \
        KnownExtensions.cpp \
-       QuarantineManger.cpp
+       QuarantineManager.cpp
 
 #	Specify the resource definition files to use. Full or relative paths can be
 #	used.
