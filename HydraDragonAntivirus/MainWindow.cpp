@@ -34,25 +34,32 @@
 
 // Message constants
 static const uint32 kMsgStartMonitor = 'strt';
+static const uint32 kMsgStopMonitor = 'spmo';
 static const uint32 kMsgQuitApp = 'quit';
 static const uint32 kMsgInstallClamAV = 'inst';
 static const uint32 kMsgChangeMonitorDirectory = 'chmd';
 static const uint32 kMsgActivateClamAV = 'actv';
 static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
+static const uint32 kMsgStopClamAVMonitor = 'spcm';
+static const uint32 kMsgCheckClamAVInstallation = 'chci';
 static const uint32 kMsgUpdateVirusDefinitions = 'updt';
 static const uint32 kMsgActivateYara = 'acty'; // New message for YARA activation
 static const uint32 kMsgOpenQuarantineManager = 'oqmt'; // Message for opening the Quarantine Manager
 
 // Messages for user actions
-static const uint32 kMsgScan = 'scan'; // Message for scanning action
+static const uint32 kMsgStartScan = 'stsc'; // Message for starting a scan
+static const uint32 kMsgStopScan = 'stps'; // Message for stopping a scan
 static const uint32 kMsgQuarantineAll = 'qral'; // Message for quarantining all threats
 static const uint32 kMsgIgnoreAll = 'igal'; // Message for ignoring all threats
-static const uint32 kMsgDelete = 'dlt'; // Message for deleting a selected threat
-static const uint32 kMsgDeleteAll = 'dall'; // Message for deleting all threats
+static const uint32 kMsgRemove = 'dlt'; // Message for deleting a selected threat
+static const uint32 kMsgDRemoveAll = 'dall'; // Message for deleting all threats
 static const uint32 kMsgRansomwareCheck = 'rchk'; // Message for enabling/disabling ransomware check
 static const uint32 kMsgYaraCheck = 'ychk'; // Message for enabling/disabling YARA engine
 static const uint32 kMsgClamAVCheck = 'cchk'; // Message for enabling/disabling ClamAV engine
 static const uint32 kMsgAutoQuarantineCheck = 'aQnt'; // Message for enabling/disabling auto quarantine
+static const uint32 kMsgQuarantine = 'qurn';             // Message for quarantining a detected threat
+static const uint32 kMsgIgnore = 'igor';                  // Message for ignoring a detected threat
+static const uint32 kMsgSelectDirectory = 'seld';        // Message for selecting a directory
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
@@ -97,8 +104,8 @@ MainWindow::MainWindow()
     // Quarantine buttons
     fQuarantineAllButton = new BButton("quarantineAllButton", "Quarantine All", new BMessage('qral'));
     fIgnoreAllButton = new BButton("ignoreAllButton", "Ignore All", new BMessage('igal'));
-    fDeleteButton = new BButton("deleteButton", "Delete", new BMessage('dlt'));
-    fDeleteAllButton = new BButton("deleteAllButton", "Delete All", new BMessage('dall'));
+    fRemoveButton = new BButton("removeButton", "Remove", new BMessage('dlt'));
+    fRemoveAllButton = new BButton("removeAllButton", "Remove All", new BMessage('dall'));
 
     // Directory selection button
     BButton* fSelectDirectoryButton = new BButton("selectDirectoryButton", "Select Directory", new BMessage('seld'));
@@ -113,8 +120,8 @@ MainWindow::MainWindow()
         .Add(fScanButton)          // Add the Scan button
         .Add(fQuarantineAllButton) // Add the Quarantine All button
         .Add(fIgnoreAllButton)     // Add the Ignore All button
-        .Add(fDeleteButton)        // Add the Delete button
-        .Add(fDeleteAllButton)     // Add the Delete All button
+        .Add(fRemoveButton)        // Add the Remove button
+        .Add(fRemoveAllButton)     // Add the Remove All button
         .Add(fSelectDirectoryButton) // Add the Select Directory button
         .AddGlue()
         .End();
@@ -307,33 +314,40 @@ void MainWindow::MessageReceived(BMessage* message)
         break;
     }
 
-    case kMsgScan: {
+    case kMsgStartScan: {
         // Implement your scanning logic here
         std::set<std::string> processedFiles;
         NormalScan(monitoringDirectory.String(), processedFiles); // Start normal scan
         break;
     }
 
+    case kMsgStopScan: {
+        // Call the function to stop the scan
+        StopScan(); // Implement this method to handle stopping the scan
+        break;
+    }
+
+    case kMsgQuarantine: {
+        _Quarantine();
+        break;
+    }
+
     case kMsgQuarantineAll: {
-        // Implement your quarantine all logic here
         _QuarantineAll();
         break;
     }
 
     case kMsgIgnoreAll: {
-        // Implement your ignore all logic here
         _IgnoreAll();
         break;
     }
 
-    case kMsgDelete: {
-        // Implement your delete logic here
+    case kMsgRemove: {
         _Remove();
         break;
     }
 
-    case kMsgDeleteAll: {
-        // Implement your delete all logic here
+    case kMsgRemoveAll: {
         _RemoveAll();
         break;
     }
@@ -914,11 +928,11 @@ void MainWindow::_Ignore(const std::string& filePath) {
 void MainWindow::_Remove(const std::string& filePath) {
     try {
         std::filesystem::remove(filePath);
-        printf("File deleted: %s\n", filePath.c_str());
-        fStatusView->Insert(("File deleted: " + filePath).c_str());
+        printf("File removed: %s\n", filePath.c_str());
+        fStatusView->Insert(("File removed: " + filePath).c_str());
     } catch (const std::filesystem::filesystem_error& e) {
-        printf("Failed to delete file: %s\n", e.what());
-        fStatusView->Insert(("Failed to delete file: " + std::string(e.what())).c_str());
+        printf("Failed to  remove file: %s\n", e.what());
+        fStatusView->Insert(("Failed to remove file: " + std::string(e.what())).c_str());
     }
 }
 
@@ -938,12 +952,12 @@ void MainWindow::_QuarantineAll(const std::set<std::string>& files) {
     fStatusView->Insert("All specified files are quarantined.");
 }
 
-void MainWindow::_DeleteAll(const std::set<std::string>& files) {
+void MainWindow::_RemoveAll(const std::set<std::string>& files) {
     for (const auto& filePath : files) {
         _Remove(filePath); // Call the remove function for each file
     }
-    printf("All specified files are deleted.\n");
-    fStatusView->Insert("All specified files are deleted.");
+    printf("All specified files are removed.\n");
+    fStatusView->Insert("All specified files are removed.");
 }
 
 void MainWindow::NormalScan(const std::string& directory, std::set<std::string>& processedFiles)
@@ -1040,8 +1054,6 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
                             // Auto quarantine logic
                             _Quarantine(); // Quarantine the file
                         } else {
-                            // Ask the user for action (Quarantine, Ignore, Delete)
-                            // You can implement a dialog here to get user input on the action
                         }
                     }
                 }

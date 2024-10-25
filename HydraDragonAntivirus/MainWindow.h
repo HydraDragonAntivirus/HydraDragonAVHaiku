@@ -97,18 +97,6 @@ private:
 
     std::set<std::string> exclusions; // For storing exclusion rules
 
-    // Define message constants
-    enum {
-        kMsgStartMonitor = 'stmo',
-        kMsgStopMonitor = 'spmo',
-        kMsgStartClamAVMonitor = 'stcm',
-        kMsgStopClamAVMonitor = 'spcm',
-        kMsgCheckClamAVInstallation = 'chci',
-        kMsgOpenQuarantineManager = 'oqmt', // Message for opening the Quarantine Manager
-        kMsgStartScan = 'stsc',              // Message for starting a scan
-        kMsgSelectDirectory = 'seld'         // Message for selecting a directory
-    };
-
     // Function to check ClamAV installation
     bool IsClamAVInstalled();
 
