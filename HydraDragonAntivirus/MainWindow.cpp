@@ -26,11 +26,13 @@
 #include <cstdio>
 #include <iostream>
 #include <ScrollView.h>
+#include <CheckBox.h> // Include for BCheckBox
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
 #define MAX_PATH_LENGTH 255
 
+// Message constants
 static const uint32 kMsgStartMonitor = 'strt';
 static const uint32 kMsgQuitApp = 'quit';
 static const uint32 kMsgInstallClamAV = 'inst';
@@ -41,6 +43,17 @@ static const uint32 kMsgUpdateVirusDefinitions = 'updt';
 static const uint32 kMsgActivateYara = 'acty'; // New message for YARA activation
 static const uint32 kMsgOpenQuarantineManager = 'oqmt'; // Message for opening the Quarantine Manager
 
+// Messages for user actions
+static const uint32 kMsgScan = 'scan'; // Message for scanning action
+static const uint32 kMsgQuarantineAll = 'qral'; // Message for quarantining all threats
+static const uint32 kMsgIgnoreAll = 'igal'; // Message for ignoring all threats
+static const uint32 kMsgDelete = 'dlt'; // Message for deleting a selected threat
+static const uint32 kMsgDeleteAll = 'dall'; // Message for deleting all threats
+static const uint32 kMsgRansomwareCheck = 'rchk'; // Message for enabling/disabling ransomware check
+static const uint32 kMsgYaraCheck = 'ychk'; // Message for enabling/disabling YARA engine
+static const uint32 kMsgClamAVCheck = 'cchk'; // Message for enabling/disabling ClamAV engine
+static const uint32 kMsgAutoQuarantineCheck = 'aQnt'; // Message for enabling/disabling auto quarantine
+
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
 // List of known file extensions
@@ -50,7 +63,7 @@ MainWindow::MainWindow()
     : BWindow(BRect(100, 100, 500, 400), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
-    // Initialize the file panel, set it to select directories
+    // Initialize the file panel for directory selection
     fSelectPanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
 
     CreateConfigDirectory(); // Create the config directory
@@ -72,10 +85,37 @@ MainWindow::MainWindow()
                                                false,  // Do not horizontal scroll
                                                true);   // Enable vertical scroll
 
+    // Checkboxes for enabling scan engines
+    fRansomwareCheckBox = new BCheckBox("ransomwareCheck", "Enable Ransomware Check", new BMessage('rchk'));
+    fYaraCheckBox = new BCheckBox("yaraCheck", "Enable YARA Engine", new BMessage('ychk'));
+    fClamavCheckBox = new BCheckBox("clamavCheck", "Enable ClamAV Engine", new BMessage('cchk'));
+    fAutoQuarantineCheckBox = new BCheckBox("autoQuarantineCheckBox", "Enable Auto Quarantine", new BMessage('aQnt'));
+
+    // Scan button
+    fScanButton = new BButton("scanButton", "Scan", new BMessage('scan'));
+
+    // Quarantine buttons
+    fQuarantineAllButton = new BButton("quarantineAllButton", "Quarantine All", new BMessage('qral'));
+    fIgnoreAllButton = new BButton("ignoreAllButton", "Ignore All", new BMessage('igal'));
+    fDeleteButton = new BButton("deleteButton", "Delete", new BMessage('dlt'));
+    fDeleteAllButton = new BButton("deleteAllButton", "Delete All", new BMessage('dall'));
+
+    // Directory selection button
+    BButton* fSelectDirectoryButton = new BButton("selectDirectoryButton", "Select Directory", new BMessage('seld'));
+
     // Set the layout
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .Add(menuBar)
-        .Add(scrollView)  // Add the scroll view instead of the text view directly
+        .Add(scrollView)
+        .Add(fRansomwareCheckBox)  // Add the ransomware check checkbox
+        .Add(fYaraCheckBox)        // Add the YARA check checkbox
+        .Add(fClamavCheckBox)      // Add the ClamAV check checkbox
+        .Add(fScanButton)          // Add the Scan button
+        .Add(fQuarantineAllButton) // Add the Quarantine All button
+        .Add(fIgnoreAllButton)     // Add the Ignore All button
+        .Add(fDeleteButton)        // Add the Delete button
+        .Add(fDeleteAllButton)     // Add the Delete All button
+        .Add(fSelectDirectoryButton) // Add the Select Directory button
         .AddGlue()
         .End();
 
@@ -252,20 +292,80 @@ void MainWindow::MessageReceived(BMessage* message)
         ActivateYARA();
         break;
 
-        case kMsgCheckClamAVInstallation: {
-            if (IsClamAVInstalled()) {
-                BAlert* alert = new BAlert("ClamAV Check", 
-                                           "ClamAV is installed.", 
-                                           "OK");
-                alert->Go();  // Display success message
-            } else {
-                BAlert* alert = new BAlert("ClamAV Check", 
-                                           "ClamAV is not installed.", 
-                                           "OK");
-                alert->Go();  // Display failure message
-            }
-            break;
+    case kMsgCheckClamAVInstallation: {
+        if (IsClamAVInstalled()) {
+            BAlert* alert = new BAlert("ClamAV Check", 
+                                       "ClamAV is installed.", 
+                                       "OK");
+            alert->Go();  // Display success message
+        } else {
+            BAlert* alert = new BAlert("ClamAV Check", 
+                                       "ClamAV is not installed.", 
+                                       "OK");
+            alert->Go();  // Display failure message
         }
+        break;
+    }
+
+    case kMsgScan: {
+        // Implement your scanning logic here
+        std::set<std::string> processedFiles;
+        NormalScan(monitoringDirectory.String(), processedFiles); // Start normal scan
+        break;
+    }
+
+    case kMsgQuarantineAll: {
+        // Implement your quarantine all logic here
+        _QuarantineAll();
+        break;
+    }
+
+    case kMsgIgnoreAll: {
+        // Implement your ignore all logic here
+        _IgnoreAll();
+        break;
+    }
+
+    case kMsgDelete: {
+        // Implement your delete logic here
+        _Remove();
+        break;
+    }
+
+    case kMsgDeleteAll: {
+        // Implement your delete all logic here
+        _RemoveAll();
+        break;
+    }
+
+    case kMsgRansomwareCheck: {
+        // Handle enabling/disabling ransomware check
+        ransomwareEnabled = !ransomwareEnabled; // Toggle state
+        printf("Ransomware check %s\n", ransomwareEnabled ? "enabled" : "disabled");
+        break;
+    }
+
+    case kMsgYaraCheck: {
+        // Handle enabling/disabling YARA engine
+        yaraEnabled = !yaraEnabled; // Toggle state
+        printf("YARA engine %s\n", yaraEnabled ? "enabled" : "disabled");
+        break;
+    }
+
+    case kMsgClamAVCheck: {
+        // Handle enabling/disabling ClamAV engine
+        clamavEnabled = !clamavEnabled; // Toggle state
+        printf("ClamAV engine %s\n", clamavEnabled ? "enabled" : "disabled");
+        break;
+    }
+
+    case kMsgAutoQuarantineCheck: {
+        // Handle enabling/disabling auto quarantine
+        bool autoQuarantineEnabled = message->FindBool("value", false);
+        printf("Auto quarantine %s\n", autoQuarantineEnabled ? "enabled" : "disabled");
+        break;
+    }
+
     default:
         BWindow::MessageReceived(message);
         break;
@@ -782,6 +882,201 @@ void MainWindow::LogQuarantineDetails(const std::string& logFilePath, const std:
         logFile.close(); // Close the log file
     } else {
         printf("Error opening log file: %s\n", logFilePath.c_str());
+    }
+}
+
+void MainWindow::_Quarantine(const std::string& filePath) {
+    std::string quarantineDir = "/path/to/quarantine"; // Define your quarantine directory
+    std::filesystem::create_directories(quarantineDir); // Ensure the directory exists
+
+    try {
+        std::string fileName = std::filesystem::path(filePath).filename().string();
+        std::string quarantinePath = (std::filesystem::path(quarantineDir) / fileName).string();
+
+        // Move the file to the quarantine directory
+        std::filesystem::rename(filePath, quarantinePath);
+        printf("File quarantined: %s\n", quarantinePath.c_str());
+        fStatusView->Insert(("File quarantined: " + quarantinePath).c_str());
+    } catch (const std::filesystem::filesystem_error& e) {
+        printf("Failed to quarantine file: %s\n", e.what());
+        fStatusView->Insert(("Failed to quarantine file: " + std::string(e.what())).c_str());
+    }
+}
+
+void MainWindow::_Ignore(const std::string& filePath) {
+    // You might want to keep track of ignored files
+    ignoredFiles.insert(filePath); // Assuming ignoredFiles is a set of strings
+
+    printf("Ignoring file: %s\n", filePath.c_str());
+    fStatusView->Insert(("Ignoring file: " + filePath).c_str());
+}
+
+void MainWindow::_Remove(const std::string& filePath) {
+    try {
+        std::filesystem::remove(filePath);
+        printf("File deleted: %s\n", filePath.c_str());
+        fStatusView->Insert(("File deleted: " + filePath).c_str());
+    } catch (const std::filesystem::filesystem_error& e) {
+        printf("Failed to delete file: %s\n", e.what());
+        fStatusView->Insert(("Failed to delete file: " + std::string(e.what())).c_str());
+    }
+}
+
+void MainWindow::_IgnoreAll(const std::set<std::string>& files) {
+    for (const auto& filePath : files) {
+        _Ignore(filePath); // Call the ignore function for each file
+    }
+    printf("All specified files are ignored.\n");
+    fStatusView->Insert("All specified files are ignored.");
+}
+
+void MainWindow::_QuarantineAll(const std::set<std::string>& files) {
+    for (const auto& filePath : files) {
+        _Quarantine(filePath); // Call the quarantine function for each file
+    }
+    printf("All specified files are quarantined.\n");
+    fStatusView->Insert("All specified files are quarantined.");
+}
+
+void MainWindow::_DeleteAll(const std::set<std::string>& files) {
+    for (const auto& filePath : files) {
+        _Remove(filePath); // Call the remove function for each file
+    }
+    printf("All specified files are deleted.\n");
+    fStatusView->Insert("All specified files are deleted.");
+}
+
+void MainWindow::NormalScan(const std::string& directory, std::set<std::string>& processedFiles)
+{
+    try {
+        if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
+            printf("Invalid directory: %s\n", directory.c_str());
+            return; // Exit if the directory is invalid
+        }
+
+        if (directory.length() > MAX_PATH_LENGTH) {
+            printf("Directory path too long: %s, skipping...\n", directory.c_str());
+            return; // Skip this directory
+        }
+
+        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+            // Ensure the entry exists before processing
+            if (!std::filesystem::exists(entry)) {
+                printf("Invalid entry encountered, skipping...\n");
+                continue; // Skip if entry is invalid
+            }
+
+            if (entry.is_directory()) {
+                // Recursively scan subdirectories
+                NormalScan(entry.path().string(), processedFiles);
+            } else if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string(); // Only get the filename
+                std::string fullPath = entry.path().string(); // Full path for length check
+
+                if (fullPath.length() > MAX_PATH_LENGTH) {
+                    printf("File path too long: %s, skipping...\n", fullPath.c_str());
+                    continue; // Skip this file
+                }
+
+                if (processedFiles.find(fullPath) != processedFiles.end()) {
+                    continue; // Skip if already processed
+                }
+
+                processedFiles.insert(fullPath); // Mark this file as processed
+
+                // Check for known ransomware extensions
+                if (std::find(KnownRansomwareExtensions.begin(), KnownRansomwareExtensions.end(), filename) != KnownRansomwareExtensions.end()) {
+                    printf("Potential ransomware file found: %s\n", fullPath.c_str());
+                    // Handle ransomware detection (e.g., alert the user)
+                    if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
+                        // Auto quarantine logic
+                        _Quarantine(); // Quarantine the file
+                    }
+                    continue;
+                }
+
+                // Scan with ClamAV if enabled
+                if (clamavEnabled) {
+                    std::string clamScanCommand = "clamdscan --no-summary " + fullPath;
+
+                    // Use popen to execute the command and read output
+                    FILE* pipe = popen(clamScanCommand.c_str(), "r");
+                    if (!pipe) {
+                        perror("popen failed");
+                        continue; // Skip this file and move on
+                    }
+
+                    char buffer[128];
+                    std::string output;
+                    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+                        output += buffer; // Collect output from the command
+                    }
+                    int result = pclose(pipe); // Close the pipe and get the exit code
+
+                    std::string virusName;
+
+                    if (result != 0) {
+                        // Check if the output contains "FOUND"
+                        if (output.find("FOUND") != std::string::npos) {
+                            // Extract virus name from the output
+                            virusName = output.substr(0, output.find(" FOUND")); // Get the part before "FOUND"
+                        }
+                    }
+
+                    if (virusName.empty()) {
+                        // The scan was successful and the file is clean
+                        printf("File is clean: %s\n", fullPath.c_str());
+                    } else {
+                        // Handle virus detection
+                        bool isPUA = virusName.rfind("PUA", 0) == 0; // Check if virusName starts with "PUA"
+                        std::string type = isPUA ? "PUA" : "Virus"; // Set type based on check
+
+                        // Notify the user about the detected threat
+                        std::string alertMessage = type + " detected: " + virusName + " in file: " + fullPath;
+                        fStatusView->Insert(alertMessage.c_str()); // Update status view
+
+                        // Check if auto quarantine is enabled
+                        if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
+                            // Auto quarantine logic
+                            _Quarantine(); // Quarantine the file
+                        } else {
+                            // Ask the user for action (Quarantine, Ignore, Delete)
+                            // You can implement a dialog here to get user input on the action
+                        }
+                    }
+                }
+
+                // Scan with YARA if enabled
+                if (yaraEnabled && rules != nullptr) {
+                    // Scanning with YARA
+                    int matches = 0; // To store the number of matches
+                    int yaraResult = yr_rules_scan_file(rules, fullPath.c_str(), &matches, nullptr, nullptr, 0); // Pass matches directly
+
+                    // Check for YARA results
+                    if (yaraResult == ERROR_SUCCESS) {
+                        if (matches > 0) {
+                            // Handle the case where matches were found
+                            std::string matchedRule = GetMatchedRule(); // Implement this function to retrieve the matched rule name
+                            if (exclusions.find(matchedRule) == exclusions.end()) {
+                                // If the matched rule is not in exclusions, notify the user
+                                std::string yaraAlertMessage = "YARA rule matched for file: " + fullPath + " - Rule: " + matchedRule;
+                                fStatusView->Insert(yaraAlertMessage.c_str()); // Update status view
+                            } else {
+                                printf("Matched rule %s is excluded for file: %s\n", matchedRule.c_str(), fullPath.c_str());
+                                fStatusView->Insert(("Matched rule " + matchedRule + " is excluded for file: " + fullPath).c_str());
+                            }
+                        }
+                    } else {
+                        // Handle other errors from YARA
+                        printf("YARA scan error: %d\n", yaraResult);
+                    }
+                }
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        printf("Filesystem error: %s\n", e.what());
+    } catch (const std::exception& e) {
+        printf("Exception caught: %s\n", e.what());
     }
 }
 

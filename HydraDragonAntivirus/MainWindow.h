@@ -13,7 +13,6 @@
 #include <Message.h>
 #include <String.h>
 #include <thread>
-
 #include <yara.h>
 
 class MainWindow : public BWindow
@@ -43,6 +42,9 @@ public:
     void ShowAlert(const std::string& title, const std::string& message);
     void LogQuarantineDetails(const std::string& logFilePath, const std::string& filePath, const std::string& reason, bool isPUA);
     bool IsClamDRunning();
+    void StartScan();
+    void CreateScanControls();
+
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
@@ -57,7 +59,34 @@ private:
     BFilePanel* fOpenPanel;
     BFilePanel* fSavePanel;
     BFilePanel* fSelectPanel;
-    
+
+    // Checkboxes to enable/disable engines
+    BCheckBox* fRansomwareCheckBox;  // Check for ransomware engine
+    BCheckBox* fYaraCheckBox;         // Check for YARA engine
+    BCheckBox* fClamAVCheckBox;       // Check for ClamAV engine
+
+    BButton* fScanButton;             // Button to start scanning
+    BButton* fQuarantineButton;       // Button to quarantine a detected item
+    BButton* fRemoveButton;           // Button to remove a detected item
+    BButton* fIgnoreButton;           // Button to ignore a detected item
+    BButton* fQuarantineAllButton;    // Button to quarantine all detected items
+    BButton* fRemoveAllButton;        // Button to remove all detected items
+    BButton* fIgnoreAllButton;        // Button to ignore all detected items
+    BButton* fSelectDirectoryButton;   // Button to select scan directory
+
+    void _Quarantine();                // Method to handle quarantine action
+    void _Remove();                    // Method to handle removal action
+    void _Ignore();                    // Method to handle ignore action
+    void _QuarantineAll();             // Declaration for the Quarantine All action
+    void _RemoveAll();                 // Method to handle remove all action
+    void _IgnoreAll();                 // Method to handle ignore all action
+    void  NormalScan(const std::string& directory, std::set<std::string>& processedFiles)
+
+    // Engine states
+    bool clamavEnabled;
+    bool yaraEnabled;
+    bool ransomwareEnabled;
+
     bool isMonitoring = false;  // Track if monitoring is active
     std::thread monitoringThread; // Store the thread reference
 
@@ -74,7 +103,9 @@ private:
         kMsgStartClamAVMonitor = 'stcm',
         kMsgStopClamAVMonitor = 'spcm',
         kMsgCheckClamAVInstallation = 'chci',
-        kMsgOpenQuarantineManager = 'oqmt' // Message for opening the Quarantine Manager
+        kMsgOpenQuarantineManager = 'oqmt', // Message for opening the Quarantine Manager
+        kMsgStartScan = 'stsc',              // Message for starting a scan
+        kMsgSelectDirectory = 'seld'         // Message for selecting a directory
     };
 
     // Function to check ClamAV installation
