@@ -46,6 +46,7 @@ public:
     bool IsClamDRunning();
     void StartScan();
     void CreateScanControls();
+    void DirectorySelected(BMessage* message);
 
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 

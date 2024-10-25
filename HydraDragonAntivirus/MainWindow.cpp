@@ -1,4 +1,4 @@
-// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected add new change detector auto update definations when program start good interface show selected directory show scanned path add cleanup button etc. 
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected add new change detector auto update definations when program start good interface show selected directory show scanned path add cleanup button add remove obfuscation fix refs received issue etc. 
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
@@ -443,6 +443,16 @@ void MainWindow::MessageReceived(BMessage* message)
     default:
         BWindow::MessageReceived(message);
         break;
+    }
+}
+
+void MainWindow::DirectorySelected(BMessage* message) {
+    entry_ref dirRef;
+    if (message->FindRef("refs", &dirRef) == B_OK) {
+        BDirectory dir(&dirRef);
+        if (dir.InitCheck() == B_OK) {
+            SelectedDirectory = dir.Path(); // Store the selected directory path
+        }
     }
 }
 
