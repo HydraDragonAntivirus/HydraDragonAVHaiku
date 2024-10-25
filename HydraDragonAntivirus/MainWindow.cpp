@@ -583,7 +583,33 @@ std::set<std::string> MainWindow::LoadExclusionRules(const std::string& filePath
     return exclusions;
 }
 
+bool MainWindow::IsClamDRunning() {
+    // Check if clamd is running using `pgrep clamd`, which returns 0 if a process is found
+    int result = system("pgrep clamd > /dev/null 2>&1");
+    return (result == 0); // 0 indicates that clamd is running
+}
+
 void MainWindow::MonitorClamAV() {
+    // Check if ClamD is running at the start
+    if (!IsClamDRunning()) {
+        BAlert* alert = new BAlert("ClamAV Not Running",
+                                   "The ClamAV daemon (clamd) is not running. Please start it before monitoring.",
+                                   "OK", nullptr, nullptr,
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+        alert->Go(); // Show the alert and wait for user response
+        return; // Exit the function if clamd is not running
+    }
+
+    // Check if YARA rules are loaded
+    if (rules == nullptr) {
+        BAlert* alert = new BAlert("YARA Rules Not Loaded",
+                                   "YARA rules are not loaded. Please load the rules before starting monitoring.",
+                                   "OK", nullptr, nullptr,
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+        alert->Go(); // Show the alert and wait for user response
+        return; // Exit the function if YARA rules are not loaded
+    }
+
     // Set the quarantine directory within the user settings directory
     BPath quarantinePath;
     find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
