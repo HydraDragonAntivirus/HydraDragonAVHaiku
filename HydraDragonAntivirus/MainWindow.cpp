@@ -59,15 +59,21 @@ MainWindow::MainWindow()
 
     BMenuBar* menuBar = _BuildMenu();
 
-    // Create the status view
+    // Create a scroll view for better status display
     fStatusView = new BTextView("statusView");
     fStatusView->MakeEditable(false); // Make it read-only
     fStatusView->SetText("Status:\n"); // Initialize with a default message
+    fStatusView->SetFontSize(12); // Set font size for better readability
+
+    BScrollView* scrollView = new BScrollView("scrollView", fStatusView,
+                                               B_FOLLOW_ALL_SIDES, 
+                                               false,  // Do not horizontal scroll
+                                               true);   // Enable vertical scroll
 
     // Set the layout
     BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
         .Add(menuBar)
-        .Add(fStatusView)
+        .Add(scrollView)  // Add the scroll view instead of the text view directly
         .AddGlue()
         .End();
 
