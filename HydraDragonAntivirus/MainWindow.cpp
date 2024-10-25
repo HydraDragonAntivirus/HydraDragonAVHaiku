@@ -598,8 +598,7 @@ void MainWindow::MonitorClamAV() {
     if (!IsClamDRunning()) {
         BAlert* alert = new BAlert("ClamAV Not Running",
                                    "The ClamAV daemon (clamd) is not running. Please start it before monitoring.",
-                                   "OK", nullptr, nullptr,
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+                                   "OK");
         alert->Go(); // Show the alert and wait for user response
         return; // Exit the function if clamd is not running
     }
@@ -608,8 +607,7 @@ void MainWindow::MonitorClamAV() {
     if (rules == nullptr) {
         BAlert* alert = new BAlert("YARA Rules Not Loaded",
                                    "YARA rules are not loaded. Please load the rules before starting monitoring.",
-                                   "OK", nullptr, nullptr,
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+                                   "OK");
         alert->Go(); // Show the alert and wait for user response
         return; // Exit the function if YARA rules are not loaded
     }
@@ -673,7 +671,7 @@ void MainWindow::MonitorClamAV() {
                 } else {
                     // Notify the user about the virus detected
                     std::string alertMessage = "Virus detected: " + virusName + " in file: " + file;
-                    fStatusView->Insert(alertMessage + "\n"); // Update status view
+                    fStatusView->Insert(alertMessage.c_str()); // Update status view
 
                     // Move the file to quarantine
                     std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
@@ -694,7 +692,7 @@ void MainWindow::MonitorClamAV() {
                         if (exclusions.find(matchedRule) == exclusions.end()) {
                             // If the matched rule is not in exclusions, move to quarantine
                             std::string yaraAlertMessage = "YARA rule matched for file: " + file + " - Rule: " + matchedRule;
-                            fStatusView->Insert(yaraAlertMessage + "\n"); // Update status view
+                            fStatusView->Insert(yaraAlertMessage.c_str()); // Update status view
 
                             // Move to quarantine
                             std::string quarantineFilePath = std::string(quarantinePath.Path()) + "/" + std::filesystem::path(file).filename().string();
@@ -706,7 +704,7 @@ void MainWindow::MonitorClamAV() {
                             }
                         } else {
                             std::string exclusionMessage = "Matched rule " + matchedRule + " is excluded for file: " + file;
-                            fStatusView->Insert(exclusionMessage + "\n"); // Update status view about exclusion
+                            fStatusView->Insert(exclusionMessage.c_str()); // Update status view about exclusion
                         }
                     }
                 }
