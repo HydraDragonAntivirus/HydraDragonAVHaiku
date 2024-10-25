@@ -7,6 +7,8 @@
 #include <Path.h>
 #include <FindDirectory.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 QuarantineManager::QuarantineManager()
     : BWindow(BRect(100, 100, 500, 400), "Quarantine Manager", B_TITLED_WINDOW,
@@ -26,18 +28,26 @@ QuarantineManager::QuarantineManager()
 }
 
 void QuarantineManager::LoadQuarantinedFiles() {
-    BPath quarantinePath;
-    find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
-    quarantinePath.Append("HydraDragonAntivirus/quarantine"); // Assume quarantine files are stored here
+    BPath logPath;
+    find_directory(B_USER_SETTINGS_DIRECTORY, &logPath);
+    logPath.Append("HydraDragonAntivirus/quarantine_log.txt"); // Path to the log file
 
-    BDirectory dir(quarantinePath.Path());
-    BEntry entry;
+    std::ifstream logFile(logPath.Path());
+    std::string line;
 
-    while (dir.GetNextEntry(&entry) == B_OK) {
-        BPath filePath;
-        entry.GetPath(&filePath);
-        fListView->AddItem(new BStringItem(filePath.Path()));
-        quarantinedFiles.push_back(filePath.Path()); // Store file paths
+    while (std::getline(logFile, line)) {
+        if (!line.empty()) {
+            // Expect the log format: original_file_path, virus_name, is_PUA
+            std::istringstream iss(line);
+            std::string originalPath, virusName, isPUA;
+            if (std::getline(iss, originalPath, ',') &&
+                std::getline(iss, virusName, ',') &&
+                std::getline(iss, isPUA)) {
+                
+                fListView->AddItem(new BStringItem(originalPath.c_str()));
+                quarantinedFiles.push_back(originalPath); // Store original file paths
+            }
+        }
     }
 }
 
@@ -60,12 +70,26 @@ void QuarantineManager::RestoreSelectedFile() {
     if (selectedIndex >= 0) {
         // Get the selected file path
         std::string filePath = quarantinedFiles[selectedIndex];
-
+        
         // Logic to restore the file from quarantine
-        // Implement the actual restore mechanism here
+        BPath quarantinePath;
+        find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
+        quarantinePath.Append("HydraDragonAntivirus/Quarantine"); // Quarantine folder path
+        
+        BPath restoredFilePath(quarantinePath.Path());
+        restoredFilePath.Append(std::filesystem::path(filePath).filename().string()); // Get the filename to restore
 
-        BAlert* alert = new BAlert("Restored", "File restored successfully.", "OK");
-        alert->Go();
+        // Attempt to move the file back to its original location
+        try {
+            std::filesystem::rename(restoredFilePath.Path(), filePath); // Move the file back
+            BAlert* alert = new BAlert("Restored", "File restored successfully.", "OK");
+            alert->Go();
+            fListView->RemoveItem(selectedIndex); // Remove from list view
+            quarantinedFiles.erase(quarantinedFiles.begin() + selectedIndex); // Remove from vector
+        } catch (const std::filesystem::filesystem_error& e) {
+            BAlert* alert = new BAlert("Error", "Failed to restore the file: " + std::string(e.what()), "OK");
+            alert->Go();
+        }
     }
 }
 
@@ -76,9 +100,22 @@ void QuarantineManager::DeleteSelectedFile() {
         std::string filePath = quarantinedFiles[selectedIndex];
 
         // Logic to delete the file from quarantine
-        // Implement the actual deletion mechanism here
+        BPath quarantinePath;
+        find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
+        quarantinePath.Append("HydraDragonAntivirus/Quarantine"); // Quarantine folder path
+        
+        BPath fileToDelete(quarantinePath.Path());
+        fileToDelete.Append(std::filesystem::path(filePath).filename().string()); // Get the filename to delete
 
-        BAlert* alert = new BAlert("Deleted", "File deleted successfully.", "OK");
-        alert->Go();
+        // Attempt to delete the file
+        if (std::filesystem::remove(fileToDelete.Path())) {
+            BAlert* alert = new BAlert("Deleted", "File deleted successfully.", "OK");
+            alert->Go();
+            fListView->RemoveItem(selectedIndex); // Remove from list view
+            quarantinedFiles.erase(quarantinedFiles.begin() + selectedIndex); // Remove from vector
+        } else {
+            BAlert* alert = new BAlert("Error", "Failed to delete the file.", "OK");
+            alert->Go();
+        }
     }
 }

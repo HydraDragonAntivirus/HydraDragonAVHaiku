@@ -40,6 +40,7 @@ public:
     void UpdateVirusDefinitions();
     void ActivateYARA();
     void StopMonitoring();  // Method to stop monitoring
+    void ShowAlert(const std::string& title, const std::string& message);
     bool IsClamDRunning();
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 

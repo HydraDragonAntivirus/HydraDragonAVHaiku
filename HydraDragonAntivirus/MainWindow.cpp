@@ -24,6 +24,7 @@
 #include <yara.h>
 #include <cstdio>
 #include <iostream>
+#include <Thread.h> // Include for threading
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -303,8 +304,34 @@ bool MainWindow::IsClamAVInstalled() {
 
 void MainWindow::StartClamAVMonitoring()
 {
+    // Check if ClamD is running at the start
+    if (!IsClamDRunning()) {
+        BAlert* alert = new BAlert("ClamAV Not Running",
+                                   "The ClamAV daemon (clamd) is not running. Please start it before monitoring.",
+                                   "OK");
+        alert->Go(); // Show the alert and wait for user response
+        return; // Exit the function if clamd is not running
+    }
+
+    // Check if YARA rules are loaded
+    if (rules == nullptr) {
+        BAlert* alert = new BAlert("YARA Rules Not Loaded",
+                                   "YARA rules are not loaded. Please load the rules before starting monitoring.",
+                                   "OK");
+        alert->Go(); // Show the alert and wait for user response
+        return; // Exit the function if YARA rules are not loaded
+    }
+
+    // Notify about automatic quarantine mechanism
+    BAlert* alert = new BAlert("Automatic Quarantine",
+                                "Please note that there is an automatic quarantine mechanism in place. "
+                                "Ensure that you start both the YARA and ClamAV engines before continuing.",
+                                "OK");
+    alert->Go(); // Show the alert and wait for user response
+
     printf("ClamAV Monitoring started\n");
     fStatusView->Insert("ClamAV monitoring started.\n"); // Update status view
+
     std::thread clamAVThread(&MainWindow::MonitorClamAV, this);
     clamAVThread.detach(); // Detach the thread to run independently
 }
@@ -370,8 +397,7 @@ void MainWindow::UpdateConfigFile(const BPath& selectedPath) {
     }
 
     // Append the application-specific folder and config file name
-    configPath.Append("HydraDragonAntivirus");
-    configPath.Append("config.txt");
+    configPath.Append("HydraDragonAntivirus/config.txt");
 
     // Open the config file for writing
     BFile configFile(configPath.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
@@ -602,25 +628,12 @@ bool IsClamDRunning() {
     return (result == 0);
 }
 
+void ShowAlert(const std::string& title, const std::string& message) {
+    BAlert* alert = new BAlert(title.c_str(), message.c_str(), "OK");
+    alert->Go(); // Show the alert; this will be non-blocking in a thread
+}
+
 void MainWindow::MonitorClamAV() {
-    // Check if ClamD is running at the start
-    if (!IsClamDRunning()) {
-        BAlert* alert = new BAlert("ClamAV Not Running",
-                                   "The ClamAV daemon (clamd) is not running. Please start it before monitoring.",
-                                   "OK");
-        alert->Go(); // Show the alert and wait for user response
-        return; // Exit the function if clamd is not running
-    }
-
-    // Check if YARA rules are loaded
-    if (rules == nullptr) {
-        BAlert* alert = new BAlert("YARA Rules Not Loaded",
-                                   "YARA rules are not loaded. Please load the rules before starting monitoring.",
-                                   "OK");
-        alert->Go(); // Show the alert and wait for user response
-        return; // Exit the function if YARA rules are not loaded
-    }
-
     // Set the quarantine directory within the user settings directory
     BPath quarantinePath;
     find_directory(B_USER_SETTINGS_DIRECTORY, &quarantinePath);
@@ -697,8 +710,11 @@ void MainWindow::MonitorClamAV() {
                         std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
                         printf("Moved to quarantine: %s\n", file.c_str());
 
-                        // Log the quarantine details
+                        // Log the quarantine details including the original file path
                         LogQuarantineDetails(configPath.Path(), file, virusName, isPUA);
+                        
+                        // Show a warning to the user about the quarantine in a non-blocking manner
+                        ShowAlert("File Quarantined", "A potentially harmful file has been moved to quarantine: " + file);
                     } catch (const std::filesystem::filesystem_error& e) {
                         printf("Error moving file to quarantine: %s\n", e.what());
                     }
@@ -726,8 +742,11 @@ void MainWindow::MonitorClamAV() {
                                 std::filesystem::rename(file, quarantineFilePath); // Move to quarantine
                                 printf("Moved to quarantine due to YARA match: %s\n", file.c_str());
 
-                                // Log the quarantine details
+                                // Log the quarantine details including the original file path
                                 LogQuarantineDetails(configPath.Path(), file, matchedRule, true); // Assume YARA matches as PUA for logging
+
+                                // Show a warning to the user about the quarantine in a non-blocking manner
+                                ShowAlert("File Quarantined", "A file has been quarantined due to a YARA rule match: " + file);
                             } catch (const std::filesystem::filesystem_error& e) {
                                 printf("Error moving file to quarantine: %s\n", e.what());
                             }
