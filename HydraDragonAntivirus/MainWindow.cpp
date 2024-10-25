@@ -71,7 +71,7 @@ MainWindow::MainWindow()
     : BWindow(BRect(100, 100, 500, 400), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
-    isScanning(false) // Initialize the scanning flag
+    isScanning(false); // Initialize the scanning flag
     // Initialize the file panel for directory selection
     fSelectPanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
 
@@ -318,7 +318,7 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgStartScan: {
         std::set<std::string> processedFiles;
-        isScanning(true) // Update the scanning flag
+        isScanning(true); // Update the scanning flag
         NormalScan(monitoringDirectory.String(), processedFiles); // Start normal scan
         break;
     }
@@ -330,17 +330,29 @@ void MainWindow::MessageReceived(BMessage* message)
     }
 
     case kMsgQuarantine: {
-        _Quarantine();
+        // Get the selected file path from the list
+        std::string selectedFilePath = GetSelectedFilePath(); // Implement this function to retrieve the selected file path
+        if (!selectedFilePath.empty()) {
+            _Quarantine(selectedFilePath); // Pass the selected file path
+        }
         break;
     }
 
     case kMsgIgnore: {
-        _Ignore();
+        // Get the selected file path from the list
+        std::string selectedFilePath = GetSelectedFilePath(); // Implement this function to retrieve the selected file path
+        if (!selectedFilePath.empty()) {
+            _Ignore(selectedFilePath); // Pass the selected file path
+        }
         break;
     }
 
     case kMsgRemove: {
-        _Remove();
+        // Get the selected file path from the list
+        std::string selectedFilePath = GetSelectedFilePath(); // Implement this function to retrieve the selected file path
+        if (!selectedFilePath.empty()) {
+            _Remove(selectedFilePath); // Pass the selected file path
+        }
         break;
     }
 
