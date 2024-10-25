@@ -339,7 +339,7 @@ void MainWindow::MessageReceived(BMessage* message)
         std::set<std::string> processedFiles;
     
          // Check if a directory has been selected
-        if (fSelectedDirectory.IsEmpty()) {
+        if (SelectedDirectory.IsEmpty()) {
             // Open the directory selection dialog
             BFilePanel* filePanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), nullptr, B_DIRECTORY_NODE, false);
             filePanel->Show();
@@ -347,7 +347,7 @@ void MainWindow::MessageReceived(BMessage* message)
         }
 
         bool isScanning = true; // Update the scanning flag
-        NormalScan(fSelectedDirectory.String(), processedFiles); // Start normal scan
+        NormalScan(SelectedDirectory.String(), processedFiles); // Start normal scan
     
         // Reset alert shown flag if scan is successful
         fAlertShown = false;
