@@ -354,13 +354,6 @@ void MainWindow::MessageReceived(BMessage* message)
         break;
     }
 
-    case kMsgStartScan: {
-        std::set<std::string> processedFiles;
-        bool isScanning(true); // Update the scanning flag
-        NormalScan(monitoringDirectory.String(), processedFiles); // Start normal scan
-        break;
-    }
-
     case kMsgStopScan: {
         // Call the function to stop the scan
         StopScan(); // Implement this method to handle stopping the scan

@@ -50,6 +50,7 @@ public:
     std::set<std::string> LoadExclusionRules(const std::string& filePath);
 
     BString monitoringDirectory; // Member variable to store the monitoring directory
+    BString fSelectedDirectory; // Member variable to hold the selected directory
 
 private:
     BMenuBar* _BuildMenu();
@@ -76,7 +77,6 @@ private:
     BButton* fQuarantineAllButton;    // Button to quarantine all detected items
     BButton* fRemoveAllButton;        // Button to remove all detected items
     BButton* fIgnoreAllButton;        // Button to ignore all detected items
-    BButton* fSelectDirectoryButton;   // Button to select scan directory
 
     void _Quarantine(const std::string& filePath);  // Method to handle quarantine action
     void _Remove(const std::string& filePath);  // Method to handle removal action
