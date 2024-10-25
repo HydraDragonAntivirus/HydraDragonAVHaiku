@@ -24,8 +24,6 @@
 #include <yara.h>
 #include <cstdio>
 #include <iostream>
-#include <List.h>
-#include <fstream>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -506,6 +504,14 @@ void MainWindow::UpdateVirusDefinitions()
                                    "OK");
         alert->Go();
     }
+}
+
+bool IsClamDRunning() {
+    // Check if the ClamAV daemon is running using the `ps` command
+    int result = system("ps | grep -w clamd | grep -v grep > /dev/null 2>&1");
+
+    // The command returns 0 if the process is found, 1 if not found
+    return (result == 0);
 }
 
 void MainWindow::InstallClamAV() {
