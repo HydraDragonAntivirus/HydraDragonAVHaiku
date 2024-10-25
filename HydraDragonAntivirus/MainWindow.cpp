@@ -24,6 +24,9 @@
 #include <yara.h>
 #include <cstdio>
 #include <iostream>
+#include <List.h>
+#include <Kernel.h>
+#include <fstream>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -583,10 +586,24 @@ std::set<std::string> MainWindow::LoadExclusionRules(const std::string& filePath
     return exclusions;
 }
 
-bool MainWindow::IsClamDRunning() {
-    // Check if clamd is running using `pgrep clamd`, which returns 0 if a process is found
-    int result = system("pgrep clamd > /dev/null 2>&1");
-    return (result == 0); // 0 indicates that clamd is running
+bool IsClamDRunning() {
+    // Create a list to hold the process information
+    BList processList;
+    // Retrieve the process information
+    int32 processCount = get_process_info(NULL, &processList);
+
+    // Iterate through the processes
+    for (int32 i = 0; i < processCount; i++) {
+        // Get process info for the current index
+        process_info info;
+        get_process_info(processList.ItemAt(i)->id, &info);
+        
+        // Check if the name of the process matches "clamd"
+        if (info.name == "clamd") {
+            return true; // ClamAV is running
+        }
+    }
+    return false; // ClamAV is not running
 }
 
 void MainWindow::MonitorClamAV() {
@@ -637,22 +654,29 @@ void MainWindow::MonitorClamAV() {
         for (const auto& file : currentFiles) {
             if (processedFiles.find(file) == processedFiles.end()) {
                 // If the file hasn't been processed yet, scan it with ClamAV
-                std::string clamScanCommand = "clamdscan --no-summary " + file + " > /tmp/clamdscan_output.txt 2>&1"; // Redirect output to a file
-                int result = system(clamScanCommand.c_str());
+                std::string clamScanCommand = "clamdscan --no-summary " + file;
+                
+                // Use popen to execute the command and read output
+                FILE* pipe = popen(clamScanCommand.c_str(), "r");
+                if (!pipe) {
+                    perror("popen failed");
+                    continue; // Skip this file and move on
+                }
 
-                // Check result and read output
-                std::ifstream outputFile("/tmp/clamdscan_output.txt");
-                std::string line;
+                char buffer[128];
+                std::string output;
+                while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+                    output += buffer; // Collect output from the command
+                }
+                int result = pclose(pipe); // Close the pipe and get the exit code
+
                 std::string virusName;
 
                 if (result != 0) {
-                    // Read the output to find the virus name
-                    while (std::getline(outputFile, line)) {
-                        if (line.find("FOUND") != std::string::npos) {
-                            // Extract virus name from the output
-                            virusName = line.substr(0, line.find(" FOUND")); // Get the part before "FOUND"
-                            break;
-                        }
+                    // Check if the output contains "FOUND"
+                    if (output.find("FOUND") != std::string::npos) {
+                        // Extract virus name from the output
+                        virusName = output.substr(0, output.find(" FOUND")); // Get the part before "FOUND"
                     }
                 }
 
@@ -673,7 +697,7 @@ void MainWindow::MonitorClamAV() {
                         printf("Error moving file to quarantine: %s\n", e.what());
                     }
                 }
-                
+
                 // Now, scan the same file with YARA rules if they are loaded
                 if (rules != nullptr) {
                     int yaraResult = yr_scan_file(file.c_str(), 0, nullptr, nullptr, nullptr);
