@@ -53,7 +53,7 @@ static const uint32 kMsgStartScan = 'stsc'; // Message for starting a scan
 static const uint32 kMsgStopScan = 'stps'; // Message for stopping a scan
 static const uint32 kMsgQuarantineAll = 'qral'; // Message for quarantining all threats
 static const uint32 kMsgIgnoreAll = 'igal'; // Message for ignoring all threats
-static const uint32 kMsgRemove = 'dlt'; // Message for deleting a selected threat
+static const uint32 kMsgRemove = 'dlte'; // Message for deleting a selected threat
 static const uint32 kMsgDRemoveAll = 'dall'; // Message for deleting all threats
 static const uint32 kMsgRansomwareCheck = 'rchk'; // Message for enabling/disabling ransomware check
 static const uint32 kMsgYaraCheck = 'ychk'; // Message for enabling/disabling YARA engine
@@ -107,7 +107,7 @@ MainWindow::MainWindow()
     // Quarantine buttons
     fQuarantineAllButton = new BButton("quarantineAllButton", "Quarantine All", new BMessage('qral'));
     fIgnoreAllButton = new BButton("ignoreAllButton", "Ignore All", new BMessage('igal'));
-    fRemoveButton = new BButton("removeButton", "Remove", new BMessage('dlt'));
+    fRemoveButton = new BButton("removeButton", "Remove", new BMessage('dlte'));
     fRemoveAllButton = new BButton("removeAllButton", "Remove All", new BMessage('dall'));
 
     // Directory selection button
