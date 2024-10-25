@@ -636,7 +636,7 @@ void MainWindow::ActivateYARA() {
     printf("Activating YARA...\n");
 
     // Check if the compiled_rule.yrc file exists
-    std::string yaraRulesPath = "compiled_rule.yrc"; // Update with the actual path
+    std::string yaraRulesPath = "yara/compiled_rule.yrc"; // Update with the actual path
     if (!std::filesystem::exists(yaraRulesPath)) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "YARA rules file not found.", 
