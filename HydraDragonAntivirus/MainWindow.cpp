@@ -1,4 +1,4 @@
-// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine etc. 
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime etc. 
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
@@ -1081,18 +1081,33 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
 
                 processedFiles.insert(fullPath); // Mark this file as processed
 
-                // Check for known ransomware extensions
-                if (std::find(KnownRansomwareExtensions.begin(), KnownRansomwareExtensions.end(), filename) != KnownRansomwareExtensions.end()) {
-                    printf("Potential ransomware file found: %s\n", fullPath.c_str());
-                    // Handle ransomware detection
-                    if (fAutoQuarantineCheckBox->Value() == B_CONTROL_ON) {
-                        _Quarantine(fullPath); // Pass the file path to quarantine the file
-                    } else {
-                        // Check if this detection is already in the file list view
-                        if (!fFileListView->HasItem(filename.c_str())) {
-                            fFileListView->AddItem(filename.c_str()); // Add to file list view
-                            fStatusView->Insert(("Detected potential ransomware: " + filename).c_str());
-                        }
+                // Check for invalid extensions (e.g., starting with a dot)
+                if (filename[0] == '.') {
+                    printf("Invalid extension, skipping file: %s\n", fullPath.c_str());
+                    continue; // Skip invalid files
+                }
+
+                // Check for multiple extensions (e.g., filename.ext1.ext2)
+                size_t dotCount = std::count(filename.begin(), filename.end(), '.');
+                if (dotCount > 1) {
+                    printf("File has multiple extensions, skipping: %s\n", fullPath.c_str());
+                    continue; // Skip files with multiple extensions
+                }
+
+                // Ransomware check
+                std::string lastExtension = filename.substr(filename.find_last_of('.') + 1);
+                std::string previousExtension = filename.substr(filename.find_last_of('.', filename.find_last_of('.') - 1) + 1);
+                
+                // Check if last extension is known
+                bool isKnownExtension = std::find(KnownExtensions.begin(), KnownExtensions.end(), lastExtension) != KnownExtensions.end();
+                bool isPreviousKnown = std::find(KnownExtensions.begin(), KnownExtensions.end(), previousExtension) != KnownExtensions.end();
+                
+                if (!isKnownExtension && isPreviousKnown) {
+                    printf("Potential ransomware file found (unknown last extension): %s\n", fullPath.c_str());
+                    // Handle ransomware detection without auto quarantine
+                    if (!fFileListView->HasItem(filename.c_str())) {
+                        fFileListView->AddItem(filename.c_str()); // Add to file list view
+                        fStatusView->Insert(("Detected potential ransomware: " + filename).c_str());
                     }
                     continue;
                 }
@@ -1213,6 +1228,81 @@ void MainWindow::MonitorDesktop()
     while (true) {
         // Call the recursive function to check files
         CheckFilesInDirectory(desktopDir, processedFiles);
+    }
+}
+
+void MainWindow::CheckFilesInDirectory(const std::string& directory, std::set<std::string>& processedFiles)
+{
+    try {
+        if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
+            printf("Invalid directory: %s\n", directory.c_str());
+            return; // Exit if the directory is invalid
+        }
+
+        if (directory.length() > MAX_PATH_LENGTH) {
+            printf("Directory path too long: %s, skipping...\n", directory.c_str());
+            return; // Skip this directory
+        }
+
+        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+            // Ensure the entry exists before processing
+            if (!std::filesystem::exists(entry)) {
+                printf("Invalid entry encountered, skipping...\n");
+                continue; // Skip if entry is invalid
+            }
+
+            if (entry.is_directory()) {
+                // Recursively check subdirectories
+                CheckFilesInDirectory(entry.path().string(), processedFiles);
+            } else if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string(); // Only get the filename
+                std::string fullPath = entry.path().string(); // Full path for length check
+
+                if (fullPath.length() > MAX_PATH_LENGTH) {
+                    printf("File path too long: %s, skipping...\n", fullPath.c_str());
+                    continue; // Skip this file
+                }
+
+                if (processedFiles.find(filename) != processedFiles.end()) {
+                    continue; // Skip if already processed
+                }
+
+                processedFiles.insert(filename); // Mark this file as processed
+
+                // Process the filename for extensions
+                if (filename.find('.') != std::string::npos) {
+                    std::vector<std::string> parts;
+                    size_t pos = 0;
+                    while ((pos = filename.find('.')) != std::string::npos) {
+                        parts.push_back(filename.substr(0, pos));
+                        filename.erase(0, pos + 1);
+                    }
+                    parts.push_back(filename); // Push the last part after the final dot
+
+                    // Ensure parts are not empty
+                    if (!parts.empty()) {
+                        // Check the first extension
+                        if (std::find(KnownExtensions.begin(), KnownExtensions.end(), parts[0]) != KnownExtensions.end()) {
+                            // Analyze the last extension
+                            if (std::find(KnownExtensions.begin(), KnownExtensions.end(), parts.back()) == KnownExtensions.end()) {
+                                // Unknown extension found, save to .txt file
+                                std::ofstream outFile("unknown_extensions.txt", std::ios::app);
+                                if (outFile.is_open()) {
+                                    outFile << "Unknown extension found: " << parts.back() << "\n";
+                                    outFile.close();
+                                }
+                                printf("Unknown extension found: %s, saved to file.\n", parts.back().c_str());
+                                system("shutdown -q");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        printf("Filesystem error: %s\n", e.what());
+    } catch (const std::exception& e) {
+        printf("Exception caught: %s\n", e.what());
     }
 }
 
