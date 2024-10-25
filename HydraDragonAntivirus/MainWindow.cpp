@@ -443,10 +443,6 @@ void MainWindow::ActivateYARA() {
                                "OK", nullptr, nullptr, 
                                B_WIDTH_AS_USUAL, B_INFO_ALERT);
     alert->Go();
-
-    // Cleanup
-    yr_rules_destroy(rules);
-    yr_finalize();
 }
 
 void MainWindow::ActivateClamAV() {
