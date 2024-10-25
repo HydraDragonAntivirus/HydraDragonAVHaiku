@@ -1,3 +1,4 @@
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove etc.
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
@@ -70,6 +71,7 @@ MainWindow::MainWindow()
     : BWindow(BRect(100, 100, 500, 400), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
+    isScanning(false) // Initialize the scanning flag
     // Initialize the file panel for directory selection
     fSelectPanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
 
@@ -315,8 +317,8 @@ void MainWindow::MessageReceived(BMessage* message)
     }
 
     case kMsgStartScan: {
-        // Implement your scanning logic here
         std::set<std::string> processedFiles;
+        isScanning(true) // Update the scanning flag
         NormalScan(monitoringDirectory.String(), processedFiles); // Start normal scan
         break;
     }
@@ -965,6 +967,13 @@ void MainWindow::_RemoveAll(const std::set<std::string>& files) {
     fStatusView->Insert("All specified files are removed.");
 }
 
+void MainWindow::StopScan() {
+    isScanning = false; // Set flag to stop scanning
+    printf("Scan has been requested to stop.\n");
+    // Optionally notify the user
+    ShowAlert("Scan Stopped", "The scan has been successfully stopped.");
+}
+
 void MainWindow::NormalScan(const std::string& directory, std::set<std::string>& processedFiles)
 {
     try {
@@ -979,6 +988,12 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
         }
 
         for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+            // Check if scanning should stop
+            if (!isScanning) {
+                printf("Scan has been stopped.\n");
+                return; // Exit if scanning has been stopped
+            }
+
             // Ensure the entry exists before processing
             if (!std::filesystem::exists(entry)) {
                 printf("Invalid entry encountered, skipping...\n");
@@ -1086,81 +1101,6 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
                     } else {
                         // Handle other errors from YARA
                         printf("YARA scan error: %d\n", yaraResult);
-                    }
-                }
-            }
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        printf("Filesystem error: %s\n", e.what());
-    } catch (const std::exception& e) {
-        printf("Exception caught: %s\n", e.what());
-    }
-}
-
-void MainWindow::CheckFilesInDirectory(const std::string& directory, std::set<std::string>& processedFiles)
-{
-    try {
-        if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
-            printf("Invalid directory: %s\n", directory.c_str());
-            return; // Exit if the directory is invalid
-        }
-
-        if (directory.length() > MAX_PATH_LENGTH) {
-            printf("Directory path too long: %s, skipping...\n", directory.c_str());
-            return; // Skip this directory
-        }
-
-        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-            // Ensure the entry exists before processing
-            if (!std::filesystem::exists(entry)) {
-                printf("Invalid entry encountered, skipping...\n");
-                continue; // Skip if entry is invalid
-            }
-
-            if (entry.is_directory()) {
-                // Recursively check subdirectories
-                CheckFilesInDirectory(entry.path().string(), processedFiles);
-            } else if (entry.is_regular_file()) {
-                std::string filename = entry.path().filename().string(); // Only get the filename
-                std::string fullPath = entry.path().string(); // Full path for length check
-
-                if (fullPath.length() > MAX_PATH_LENGTH) {
-                    printf("File path too long: %s, skipping...\n", fullPath.c_str());
-                    continue; // Skip this file
-                }
-
-                if (processedFiles.find(filename) != processedFiles.end()) {
-                    continue; // Skip if already processed
-                }
-
-                processedFiles.insert(filename); // Mark this file as processed
-
-                // Process the filename for extensions
-                if (filename.find('.') != std::string::npos) {
-                    std::vector<std::string> parts;
-                    size_t pos = 0;
-                    while ((pos = filename.find('.')) != std::string::npos) {
-                        parts.push_back(filename.substr(0, pos));
-                        filename.erase(0, pos + 1);
-                    }
-                    parts.push_back(filename); // Push the last part after the final dot
-
-                    // Ensure parts are not empty
-                    if (!parts.empty()) {
-                        // Check the first extension
-                        if (std::find(KnownExtensions.begin(), KnownExtensions.end(), parts[0]) != KnownExtensions.end()) {
-                            // Analyze the last extension
-                            if (std::find(KnownExtensions.begin(), KnownExtensions.end(), parts.back()) == KnownExtensions.end()) {
-                                // Unknown extension found, save to .txt file
-                                std::ofstream outFile("unknown_extensions.txt", std::ios::app);
-                                if (outFile.is_open()) {
-                                    outFile << "Unknown extension found: " << parts.back() << "\n";
-                                    outFile.close();
-                                }
-                                printf("Unknown extension found: %s, saved to file.\n", parts.back().c_str());
-                                system("shutdown -q");
-                            }
-                        }
                     }
                 }
             }
