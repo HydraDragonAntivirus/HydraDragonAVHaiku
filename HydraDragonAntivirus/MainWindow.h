@@ -14,6 +14,7 @@
 #include <String.h>
 #include <thread>
 #include <yara.h>
+#include <CheckBox.h> // Include for BCheckBox
 
 class MainWindow : public BWindow
 {
