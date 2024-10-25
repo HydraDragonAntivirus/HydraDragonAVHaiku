@@ -945,21 +945,27 @@ std::string MainWindow::GetSelectedFilePath()
 {
     int32 selectedIndex = fFileListView->CurrentSelection(); // Get the currently selected item index
     if (selectedIndex >= 0) {
-        // Get the item at the selected index
-        BString itemString = fFileListView->ItemAt(selectedIndex)->Text(); // Adjust this if your list stores items differently
-        return itemString.String(); // Return the selected file path
+        // Get the item at the selected index and cast it to BStringItem
+        BStringItem* item = dynamic_cast<BStringItem*>(fFileListView->ItemAt(selectedIndex));
+        if (item) {
+            return item->Text(); // Return the text of the selected item if cast is successful
+        }
     }
-    return ""; // No item selected
+    return ""; // Return an empty string if no item is selected or cast fails
 }
 
-std::set<std::string> MainWindow::GetSelectedFilePaths() {
+std::set<std::string> MainWindow::GetSelectedFilePaths()
+{
     std::set<std::string> selectedFiles;
     int32 count = fFileListView->CountItems(); // Get the total number of items in the list
 
     for (int32 i = 0; i < count; ++i) {
         if (fFileListView->IsItemSelected(i)) { // Check if the item is selected
-            BString itemString = fFileListView->ItemAt(i)->Text(); // Get the text of the selected item
-            selectedFiles.insert(itemString.String()); // Add the file path to the set
+            // Cast each item to BStringItem
+            BStringItem* item = dynamic_cast<BStringItem*>(fFileListView->ItemAt(i));
+            if (item) {
+                selectedFiles.insert(item->Text()); // Add the text of the item to the set if cast is successful
+            }
         }
     }
 
