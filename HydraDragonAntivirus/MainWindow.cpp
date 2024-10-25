@@ -25,6 +25,7 @@
 #include <yara.h>
 #include <cstdio>
 #include <iostream>
+#include <ScrollView.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
@@ -65,6 +66,7 @@ MainWindow::MainWindow()
     fStatusView->SetText("Status:\n"); // Initialize with a default message
     fStatusView->SetFontSize(12); // Set font size for better readability
 
+    // Create the scroll view, passing ownership of fStatusView
     BScrollView* scrollView = new BScrollView("scrollView", fStatusView,
                                                B_FOLLOW_ALL_SIDES, 
                                                false,  // Do not horizontal scroll
