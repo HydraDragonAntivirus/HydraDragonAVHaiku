@@ -1,4 +1,4 @@
-// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime etc. 
+// TODO: Auto Remove or Continue customazation can be added here or ask user etc. also you need do this for normal malware scanner after you stop malware or not via clamav remove yara remove but not for ransom remove, Optimization no multiple detections add kill mechanism before move quarantine  add full scan quick scan add clamav with kill then quarantime remove form list after quarantine or delete file how many detected etc. 
 #include "MainWindow.h"
 #include "KnownExtensions.h"
 #include "QuarantineManager.h"
@@ -985,11 +985,19 @@ void MainWindow::_Quarantine(const std::string& filePath) {
 }
 
 void MainWindow::_Ignore(const std::string& filePath) {
-    // You might want to keep track of ignored files
-    ignoredFiles.insert(filePath); // Assuming ignoredFiles is a set of strings
+    // Find the item in the file list view by matching the file path
+    for (int32 i = 0; i < fFileListView->CountItems(); ++i) {
+        BStringItem* item = dynamic_cast<BStringItem*>(fFileListView->ItemAt(i));
+        if (item && item->Text() == filePath.c_str()) {
+            // Remove the item from the list view
+            fFileListView->RemoveItem(i);
+            delete item; // Free the memory allocated for the item
+            break;
+        }
+    }
 
-    printf("Ignoring file: %s\n", filePath.c_str());
-    fStatusView->Insert(("Ignoring file: " + filePath).c_str());
+    printf("Removed file from list: %s\n", filePath.c_str());
+    fStatusView->Insert(("Removed file from list: " + filePath).c_str());
 }
 
 void MainWindow::_Remove(const std::string& filePath) {
