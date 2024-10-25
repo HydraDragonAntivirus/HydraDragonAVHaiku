@@ -253,6 +253,15 @@ void MainWindow::MessageReceived(BMessage* message)
 void MainWindow::StartMonitoring()
 {
     if (!isMonitoring) { // Check if not already monitoring
+        BAlert* alert = new BAlert("Warning", 
+                                   "Ransomware monitoring is starting. Any detected ransomware activity will result in an immediate shutdown for security.",
+                                   "OK", "Cancel", nullptr, B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+        int32 response = alert->Go(); // Show the alert and get the user's response
+
+        if (response == 1) { // If user clicks "Cancel" (second button)
+            return; // Do not start monitoring
+        }
+
         printf("Monitoring started\n");
         fStatusView->Insert("Ransomware monitoring started.\n"); // Update status view
         isMonitoring = true; // Set monitoring state
