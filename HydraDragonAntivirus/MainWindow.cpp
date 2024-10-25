@@ -647,6 +647,7 @@ void MainWindow::MonitorClamAV() {
     // Set to track processed files
     std::set<std::string> processedFiles; 
     std::string monitorDir = monitoringDirectory.String(); // Convert BString to std::string
+    std::string quarantineDir = quarantinePath.Path(); // Get the quarantine directory path
 
     // Define path for the quarantine log
     BPath configPath;
@@ -664,6 +665,11 @@ void MainWindow::MonitorClamAV() {
 
         // Scan only new files
         for (const auto& file : currentFiles) {
+            // Check if the file is in the quarantine directory
+            if (file.find(quarantineDir) == 0) {
+                continue; // Skip scanning files in the quarantine directory
+            }
+
             if (processedFiles.find(file) == processedFiles.end()) {
                 // If the file hasn't been processed yet, scan it with ClamAV
                 std::string clamScanCommand = "clamdscan --no-summary " + file;
