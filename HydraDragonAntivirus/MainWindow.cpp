@@ -73,7 +73,7 @@ MainWindow::MainWindow()
     : BWindow(BRect(100, 100, 500, 400), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
               B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE)
 {
-    isScanning(false); // Initialize the scanning flag
+    bool isScanning(false); // Initialize the scanning flag
     // Initialize the file panel for directory selection
     fSelectPanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), NULL, B_DIRECTORY_NODE, false);
 
@@ -331,7 +331,7 @@ void MainWindow::MessageReceived(BMessage* message)
 
     case kMsgStartScan: {
         std::set<std::string> processedFiles;
-        isScanning(true); // Update the scanning flag
+        bool isScanning(true); // Update the scanning flag
         NormalScan(monitoringDirectory.String(), processedFiles); // Start normal scan
         break;
     }
@@ -1045,7 +1045,7 @@ void MainWindow::_RemoveAll() {
 }
 
 void MainWindow::StopScan() {
-    isScanning = false; // Set flag to stop scanning
+    bool isScanning = false; // Set flag to stop scanning
     printf("Scan has been requested to stop.\n");
     // Optionally notify the user
     ShowAlert("Scan Stopped", "The scan has been successfully stopped.");

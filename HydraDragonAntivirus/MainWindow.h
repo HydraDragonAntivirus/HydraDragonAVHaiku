@@ -109,7 +109,7 @@ private:
     // Function to check ClamAV installation
     bool IsClamAVInstalled();
 
-    bool isScanning; // Track if a scan is in progress
+    bool isScanning = false; // Track if a scan is in progress
 
     // Helper function to get matched YARA rule
     std::string GetMatchedRule();  // Declaration of GetMatchedRule
