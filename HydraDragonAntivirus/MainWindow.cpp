@@ -620,7 +620,7 @@ std::set<std::string> MainWindow::LoadExclusionRules(const std::string& filePath
     return exclusions;
 }
 
-bool IsClamDRunning() {
+bool MainWindow::IsClamDRunning() {
     // Check if the ClamAV daemon is running using the `ps` command
     int result = system("ps | grep -w clamd | grep -v grep > /dev/null 2>&1");
 
@@ -628,7 +628,7 @@ bool IsClamDRunning() {
     return (result == 0);
 }
 
-void ShowAlert(const std::string& title, const std::string& message) {
+void MainWindow::ShowAlert(const std::string& title, const std::string& message) {
     BAlert* alert = new BAlert(title.c_str(), message.c_str(), "OK");
     alert->Go(); // Show the alert; this will be non-blocking in a thread
 }

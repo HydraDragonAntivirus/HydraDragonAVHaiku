@@ -113,7 +113,7 @@ DEBUGGER :=
 COMPILER_FLAGS =
 
 #	Specify any additional linker flags to be used.
-LINKER_FLAGS =
+LINKER_FLAGS = -lyara
 
 #	(Only used when "TYPE" is "DRIVER"). Specify the desired driver install
 #	location in the /dev hierarchy. Example:
