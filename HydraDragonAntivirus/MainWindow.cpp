@@ -647,7 +647,6 @@ void MainWindow::MonitorClamAV() {
     // Set to track processed files
     std::set<std::string> processedFiles; 
     std::string monitorDir = monitoringDirectory.String(); // Convert BString to std::string
-    std::string quarantineDir = quarantinePath.Path(); // Get the quarantine directory path
 
     // Define path for the quarantine log
     BPath configPath;
@@ -665,13 +664,8 @@ void MainWindow::MonitorClamAV() {
 
         // Scan only new files
         for (const auto& file : currentFiles) {
-            // Check if the file is in the quarantine directory
-            if (file.find(quarantineDir) == 0) {
-                continue; // Skip scanning files in the quarantine directory
-            }
-
-            if (processedFiles.find(file) == processedFiles.end()) {
-                // If the file hasn't been processed yet, scan it with ClamAV
+            if (processedFiles.find(file) == processedFiles.end() && file.find(quarantinePath.Path()) == std::string::npos) {
+                // If the file hasn't been processed yet and is not in the quarantine folder, scan it with ClamAV
                 std::string clamScanCommand = "clamdscan --no-summary " + file;
                 
                 // Use popen to execute the command and read output
@@ -730,7 +724,7 @@ void MainWindow::MonitorClamAV() {
                 if (rules != nullptr) {
                     // Scanning with YARA
                     int matches = 0; // To store the number of matches
-                    int yaraResult = yr_rules_scan_file(rules, file.c_str(), &matches, nullptr, nullptr);
+                    int yaraResult = yr_rules_scan_file(rules, file.c_str(), &matches, nullptr, nullptr, 0); // Added 0 for flags
 
                     // Check for YARA results
                     if (yaraResult == ERROR_SUCCESS) {
