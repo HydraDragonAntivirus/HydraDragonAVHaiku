@@ -1200,7 +1200,7 @@ void MainWindow::NormalScan(const std::string& directory, std::set<std::string>&
                 // Scan with YARA if enabled
                 if (yaraEnabled && rules != nullptr) {
                     int matches = 0; // To store the number of matches
-                    int yaraResult = yr_rules_scan_file(rules, fullPath.c_str(), &matches, nullptr, nullptr, 0); // Pass matches directly
+                    int yaraResult = yr_rules_scan_file(rules, fullPath.c_str(), matches, nullptr, nullptr, 0); // Pass matches directly
 
                     // Check for YARA results
                     if (yaraResult == ERROR_SUCCESS) {
