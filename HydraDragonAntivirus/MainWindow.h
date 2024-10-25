@@ -80,7 +80,7 @@ private:
     void _QuarantineAll();             // Declaration for the Quarantine All action
     void _RemoveAll();                 // Method to handle remove all action
     void _IgnoreAll();                 // Method to handle ignore all action
-    void  NormalScan(const std::string& directory, std::set<std::string>& processedFiles)
+    void  NormalScan(const std::string& directory, std::set<std::string>& processedFiles);
 
     // Engine states
     bool clamavEnabled;
