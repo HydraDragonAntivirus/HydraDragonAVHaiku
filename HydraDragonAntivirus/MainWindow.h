@@ -75,9 +75,9 @@ private:
     BButton* fIgnoreAllButton;        // Button to ignore all detected items
     BButton* fSelectDirectoryButton;   // Button to select scan directory
 
-    void _Quarantine();                // Method to handle quarantine action
-    void _Remove();                    // Method to handle removal action
-    void _Ignore();                    // Method to handle ignore action
+    void _Quarantine(const std::string& filePath);  // Method to handle quarantine action
+    void _Remove(const std::string& filePath);  // Method to handle removal action
+    void _Ignore(const std::string& filePath); // Method to handle ignore action
     void _QuarantineAll();             // Declaration for the Quarantine All action
     void _RemoveAll();                 // Method to handle remove all action
     void _IgnoreAll();                 // Method to handle ignore all action
@@ -96,6 +96,9 @@ private:
     YR_RULES* rules;         // For YARA rules
 
     std::set<std::string> exclusions; // For storing exclusion rules
+
+    std::string MainWindow::GetSelectedFilePath;
+    std::set<std::string> GetSelectedFilePaths;
 
     // Function to check ClamAV installation
     bool IsClamAVInstalled();
