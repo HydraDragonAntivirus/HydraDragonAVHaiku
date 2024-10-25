@@ -313,9 +313,15 @@ void MainWindow::StopClamAVMonitoring()
         perror("Failed to kill clamd");
     }
 
-    fStatusView->Insert("ClamAV monitoring stopped.\n"); // Update status view
-    BAlert alert("Monitoring Stopped", "ClamAV and YARA monitoring has been stopped.", NULL, NULL, B_MESSAGE_NOTHING_SPECIAL);
-    alert->Show();
+    // Update status view
+    fStatusView->Insert("ClamAV monitoring stopped.\n");
+
+    // Display alert
+    BAlert* alert = new BAlert("Monitoring Stopped", 
+                               "ClamAV and YARA monitoring has been stopped.", 
+                               "OK", nullptr, nullptr, 
+                               B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+    alert->Go();
 }
 
 void MainWindow::CreateConfigDirectory() {
