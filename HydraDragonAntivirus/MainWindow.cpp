@@ -99,7 +99,7 @@ MainWindow::MainWindow()
     // Checkboxes for enabling scan engines
     fRansomwareCheckBox = new BCheckBox("ransomwareCheck", "Enable Ransomware Check", new BMessage('rchk'));
     fYaraCheckBox = new BCheckBox("yaraCheck", "Enable YARA Engine", new BMessage('ychk'));
-    fClamavCheckBox = new BCheckBox("clamavCheck", "Enable ClamAV Engine", new BMessage('cchk'));
+    fClamAVCheckBox = new BCheckBox("clamavCheck", "Enable ClamAV Engine", new BMessage('cchk'));
     fAutoQuarantineCheckBox = new BCheckBox("autoQuarantineCheckBox", "Enable Auto Quarantine", new BMessage('aQnt'));
 
     // Scan button
@@ -131,7 +131,7 @@ MainWindow::MainWindow()
         .Add(fileListScrollView) // Add the file list view scroll
         .Add(fRansomwareCheckBox)  // Add the ransomware check checkbox
         .Add(fYaraCheckBox)        // Add the YARA check checkbox
-        .Add(fClamavCheckBox)      // Add the ClamAV check checkbox
+        .Add(fClamAVCheckBox)      // Add the ClamAV check checkbox
         .Add(fScanButton)          // Add the Scan button
         .Add(fQuarantineAllButton) // Add the Quarantine All button
         .Add(fIgnoreAllButton)     // Add the Ignore All button
