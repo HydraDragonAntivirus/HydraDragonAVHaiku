@@ -426,40 +426,39 @@ void MainWindow::ActivateYARA() {
     }
 
     // Compile YARA rules
-    YR_COMPILER* compiler = nullptr;
-    YR_RULES* rules = nullptr;
-
+    YR_COMPILER* compiler;
     if (yr_compiler_create(&compiler) != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "Failed to create YARA compiler.", 
                                    "OK", nullptr, nullptr, 
                                    B_WIDTH_AS_USUAL, B_WARNING_ALERT);
         alert->Go();
+        yr_finalize();
         return; // Exit if compiler creation fails
     }
 
-    // Load rules from the source file
-    const char* rulesSource = yaraRulesPath.c_str();
-    if (yr_compiler_add_file(compiler, rulesSource, nullptr, nullptr) != ERROR_SUCCESS) {
-        BAlert* alert = new BAlert("YARA Activation", 
-                                   "Failed to add rules file to compiler.", 
-                                   "OK", nullptr, nullptr, 
-                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
-        alert->Go();
-        yr_compiler_destroy(compiler); // Cleanup compiler
-        return; // Exit if adding rules file fails
-    }
-
-    // Get compiled rules
-    rules = yr_compiler_get_rules(compiler);
-    if (rules == nullptr) {
+    if (yr_compiler_add_file(compiler, yaraRulesPath.c_str(), nullptr) != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "Failed to compile YARA rules.", 
                                    "OK", nullptr, nullptr, 
                                    B_WIDTH_AS_USUAL, B_WARNING_ALERT);
         alert->Go();
-        yr_compiler_destroy(compiler); // Cleanup compiler
+        yr_compiler_destroy(compiler);
+        yr_finalize();
         return; // Exit if compilation fails
+    }
+
+    // Finalize the compilation and get the rules
+    YR_RULES* rules;
+    if (yr_compiler_get_rules(compiler, &rules) != ERROR_SUCCESS) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "Failed to retrieve YARA rules.", 
+                                   "OK", nullptr, nullptr, 
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+        alert->Go();
+        yr_compiler_destroy(compiler);
+        yr_finalize();
+        return; // Exit if retrieval fails
     }
 
     // Inform the user of the result
