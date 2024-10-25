@@ -110,7 +110,6 @@ MainWindow::MainWindow()
     fStopButton = new BButton("stopButton", "Stop Scan", new BMessage('stop'));
     fStopButton->SetTarget(this); // Set the target to the current window or class instance
 
-
     // Quarantine buttons
     fQuarantineAllButton = new BButton("quarantineAllButton", "Quarantine All", new BMessage('qral'));
     fIgnoreAllButton = new BButton("ignoreAllButton", "Ignore All", new BMessage('igal'));

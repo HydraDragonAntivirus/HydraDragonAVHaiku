@@ -69,6 +69,7 @@ private:
     BCheckBox* fAutoQuarantineCheckBox; // Checkbox for auto quarantine feature
 
     BButton* fScanButton;             // Button to start scanning
+    BButton* fStopButton;             // Button to stop scanning
     BButton* fQuarantineButton;       // Button to quarantine a detected item
     BButton* fRemoveButton;           // Button to remove a detected item
     BButton* fIgnoreButton;           // Button to ignore a detected item
