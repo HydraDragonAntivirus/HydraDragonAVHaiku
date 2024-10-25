@@ -19,8 +19,15 @@ private:
     void LoadQuarantinedFiles();
     void RestoreSelectedFile();
     void DeleteSelectedFile();
+    void RestoreAllFiles();  // New method for restoring all files
+    void DeleteAllFiles();   // New method for deleting all files
 
     BListView* fListView;
+    BButton* restoreButton;      // Button to restore selected file
+    BButton* deleteButton;       // Button to delete selected file
+    BButton* restoreAllButton;   // New button to restore all files
+    BButton* deleteAllButton;    // New button to delete all files
+
     std::vector<std::string> quarantinedFiles; // Vector to store file paths
 };
 
