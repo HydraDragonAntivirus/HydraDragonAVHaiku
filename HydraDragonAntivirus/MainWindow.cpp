@@ -28,7 +28,6 @@
 #include <iostream>
 #include <ScrollView.h>
 #include <CheckBox.h> // Include for BCheckBox
-#include <ListView.h>
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Window"
