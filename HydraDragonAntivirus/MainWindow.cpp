@@ -409,7 +409,8 @@ void MainWindow::ActivateYARA() {
     if (!std::filesystem::exists(yaraRulesPath)) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "YARA rules file not found.", 
-                                   "OK");
+                                   "OK", nullptr, nullptr, 
+                                   B_WIDTH_AS_USUAL, B_INFO_ALERT);
         alert->Go();
         return; // Exit if file does not exist
     }
@@ -418,26 +419,54 @@ void MainWindow::ActivateYARA() {
     if (yr_initialize() != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
                                    "Failed to initialize YARA.", 
-                                   "OK");
+                                   "OK", nullptr, nullptr, 
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
         alert->Go();
         return; // Exit if initialization fails
     }
 
-    // Load YARA rules
-    YR_RULES* rules;
-    if (yr_rules_load_file(yaraRulesPath.c_str(), &rules) != ERROR_SUCCESS) {
+    // Compile YARA rules
+    YR_COMPILER* compiler = nullptr;
+    YR_RULES* rules = nullptr;
+
+    if (yr_compiler_create(&compiler) != ERROR_SUCCESS) {
         BAlert* alert = new BAlert("YARA Activation", 
-                                   "Failed to load YARA rules.", 
-                                   "OK");
+                                   "Failed to create YARA compiler.", 
+                                   "OK", nullptr, nullptr, 
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
         alert->Go();
-        yr_finalize();
-        return; // Exit if loading rules fails
+        return; // Exit if compiler creation fails
+    }
+
+    // Load rules from the source file
+    const char* rulesSource = yaraRulesPath.c_str();
+    if (yr_compiler_add_file(compiler, rulesSource, nullptr, nullptr) != ERROR_SUCCESS) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "Failed to add rules file to compiler.", 
+                                   "OK", nullptr, nullptr, 
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+        alert->Go();
+        yr_compiler_destroy(compiler); // Cleanup compiler
+        return; // Exit if adding rules file fails
+    }
+
+    // Get compiled rules
+    rules = yr_compiler_get_rules(compiler);
+    if (rules == nullptr) {
+        BAlert* alert = new BAlert("YARA Activation", 
+                                   "Failed to compile YARA rules.", 
+                                   "OK", nullptr, nullptr, 
+                                   B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+        alert->Go();
+        yr_compiler_destroy(compiler); // Cleanup compiler
+        return; // Exit if compilation fails
     }
 
     // Inform the user of the result
     BAlert* alert = new BAlert("YARA Activation", 
                                "YARA rules activated successfully.", 
-                               "OK");
+                               "OK", nullptr, nullptr, 
+                               B_WIDTH_AS_USUAL, B_INFO_ALERT);
     alert->Go();
 }
 
