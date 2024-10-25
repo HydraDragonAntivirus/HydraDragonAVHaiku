@@ -1,4 +1,4 @@
-// knownExtensions.h
+// KnownExtensions.h
 #ifndef KNOWN_EXTENSIONS_H
 #define KNOWN_EXTENSIONS_H
 

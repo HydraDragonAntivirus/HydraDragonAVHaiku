@@ -1,5 +1,5 @@
 #include "MainWindow.h"
-#include "knownExtensions.h"
+#include "KnownExtensions.h"
 
 #include <Application.h>
 #include <Catalog.h>
@@ -37,11 +37,12 @@ static const uint32 kMsgActivateClamAV = 'actv';
 static const uint32 kMsgStartClamAVMonitor = 'clam'; // New message for ClamAV monitoring
 static const uint32 kMsgUpdateVirusDefinitions = 'updt';
 static const uint32 kMsgActivateYara = 'acty'; // New message for YARA activation
+static const uint32 kMsgOpenQuarantineManager = 'oqmt'; // Message for opening the Quarantine Manager
 
 static const char* kSettingsFile = "Hydra Dragon Antivirus Settings";
 
 // List of known file extensions
-std::vector<std::string> knownExtensions = getKnownExtensions();
+std::vector<std::string> KnownExtensions = getKnownExtensions();
 
 MainWindow::MainWindow() 
     : BWindow(BRect(100, 100, 500, 400), B_TRANSLATE("Hydra Dragon Antivirus"), B_TITLED_WINDOW,
@@ -154,6 +155,12 @@ BMenuBar* MainWindow::_BuildMenu()
     menu->AddItem(item);
     menuBar->AddItem(menu); // Add Update menu to menuBar
 
+    // 'Quarantine' Menu
+    menu = new BMenu(B_TRANSLATE("Quarantine"));
+    item = new BMenuItem(B_TRANSLATE("Open Quarantine Manager"), new BMessage('oqmt'));
+    menu->AddItem(item);
+    menuBar->AddItem(menu); // Add Quarantine menu to menuBar
+
     // 'Help' Menu
     menu = new BMenu(B_TRANSLATE("Help"));
     item = new BMenuItem(B_TRANSLATE("About" B_UTF8_ELLIPSIS), new BMessage(B_ABOUT_REQUESTED));
@@ -225,6 +232,12 @@ void MainWindow::MessageReceived(BMessage* message)
     case kMsgUpdateVirusDefinitions:
         UpdateVirusDefinitions();
         break;
+
+    case kMsgOpenQuarantineManager: {
+        QuarantineManager* qManager = new QuarantineManager();
+        qManager->Show();
+        break;
+    }
 
     case kMsgActivateYara: // Handle YARA activation
         ActivateYARA();
@@ -795,9 +808,9 @@ void MainWindow::CheckFilesInDirectory(const std::string& directory, std::set<st
                     // Ensure parts are not empty
                     if (!parts.empty()) {
                         // Check the first extension
-                        if (std::find(knownExtensions.begin(), knownExtensions.end(), parts[0]) != knownExtensions.end()) {
+                        if (std::find(KnownExtensions.begin(), KnownExtensions.end(), parts[0]) != KnownExtensions.end()) {
                             // Analyze the last extension
-                            if (std::find(knownExtensions.begin(), knownExtensions.end(), parts.back()) == knownExtensions.end()) {
+                            if (std::find(KnownExtensions.begin(), KnownExtensions.end(), parts.back()) == KnownExtensions.end()) {
                                 // Unknown extension found, save to .txt file
                                 std::ofstream outFile("unknown_extensions.txt", std::ios::app);
                                 if (outFile.is_open()) {

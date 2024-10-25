@@ -1,4 +1,4 @@
-#include "knownExtensions.h"
+#include "KnownExtensions.h"
 
 #include <vector>
 #include <string>

@@ -31,7 +31,8 @@ APP_MIME_SIG = application/x-vnd.EmirhanUcan-HydraDragonAntivirus
 #	Also note that spaces in folder names do not work well with this Makefile.
 SRCS = App.cpp \
        MainWindow.cpp \
-       knownExtensions.cpp
+       KnownExtensions.cpp \
+       QuarantineManger.cpp
 
 #	Specify the resource definition files to use. Full or relative paths can be
 #	used.
