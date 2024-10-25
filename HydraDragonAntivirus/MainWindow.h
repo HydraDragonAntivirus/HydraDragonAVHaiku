@@ -66,6 +66,7 @@ private:
     BCheckBox* fRansomwareCheckBox;  // Check for ransomware engine
     BCheckBox* fYaraCheckBox;         // Check for YARA engine
     BCheckBox* fClamAVCheckBox;       // Check for ClamAV engine
+    BCheckBox* fAutoQuarantineCheckBox; // Checkbox for auto quarantine feature
 
     BButton* fScanButton;             // Button to start scanning
     BButton* fQuarantineButton;       // Button to quarantine a detected item
