@@ -532,8 +532,16 @@ void MainWindow::StartClamAVMonitoring()
     BAlert* alert = new BAlert("Automatic Quarantine",
                                 "Please note that there is an automatic quarantine mechanism in place. "
                                 "Ensure that you start both the YARA and ClamAV engines before continuing.",
-                                "OK");
-    alert->Go(); // Show the alert and wait for user response
+                                "OK", "Cancel", B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+    
+    if (alert->Go() == 0) {
+        // User clicked OK
+        printf("User acknowledged the automatic quarantine notification.\n");
+    } else {
+        // User clicked Cancel
+        printf("User canceled the monitoring process.\n");
+        return; // Exit the function if canceled
+    }
 
     printf("ClamAV Monitoring started\n");
     fStatusView->Insert("ClamAV monitoring started.\n"); // Update status view
