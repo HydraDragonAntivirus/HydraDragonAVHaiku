@@ -695,16 +695,6 @@ void MainWindow::ActivateYARA() {
     alert->Go();
 }
 
-class ClamAVThread : public BThread {
-public:
-    ClamAVThread() : BThread("ClamAV Daemon Thread") {}
-
-    void Run() override {
-        // Start the clamd daemon
-        system("clamd");
-    }
-};
-
 void MainWindow::ActivateClamAV() {
     printf("Activating ClamAV...\n");
 
@@ -723,10 +713,47 @@ void MainWindow::ActivateClamAV() {
                                    "OK");
     warnAlert->Go();  // Display warning message
 
-    // Create and start the ClamAV thread
-    ClamAVThread* clamAVThread = new ClamAVThread();
-    clamAVThread->Resume(); // Start the thread to run clamd
+    // Create a message to send back to the main thread
+    BMessage* resultMessage = new BMessage();
 
+    // Start the thread to run the clamd daemon
+    thread_id threadID = spawn_thread([](void* data) -> int {
+        // Start the clamd daemon
+        int result = system("clamd");
+        
+        // Create a message to send back to the main thread
+        BMessage* message = static_cast<BMessage*>(data);
+        message->what = (result == 0) ? 'CLSU' : 'CLFA'; // Custom messages for success/failure
+        return 0; // Thread function return value
+    }, "ClamAV Thread", B_NORMAL_PRIORITY, resultMessage);
+
+    if (threadID >= 0) {
+        // Resume the thread
+        resume_thread(threadID);
+        
+        // Wait for the thread to finish
+        wait_for_thread(threadID, NULL);
+        
+        // Check the message for the result
+        if (resultMessage->what == 'CLSU') {
+            BAlert* alert = new BAlert("ClamAV Activation", 
+                                       "ClamAV daemon activated successfully.", 
+                                       "OK");
+            alert->Go();  // Display success message
+        } else {
+            BAlert* alert = new BAlert("ClamAV Activation", 
+                                       "Failed to activate ClamAV daemon.", 
+                                       "OK");
+            alert->Go();  // Display failure message
+        }
+    } else {
+        BAlert* alert = new BAlert("ClamAV Activation", 
+                                   "Failed to create thread to activate ClamAV.", 
+                                   "OK");
+        alert->Go();  // Display failure message
+    }
+
+    delete resultMessage; // Clean up
 }
 
 void MainWindow::UpdateVirusDefinitions()
