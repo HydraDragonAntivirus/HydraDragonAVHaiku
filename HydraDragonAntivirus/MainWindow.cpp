@@ -336,22 +336,9 @@ void MainWindow::MessageReceived(BMessage* message)
     }
 
     case kMsgStartScan: {
-        std::set<std::string> processedFiles;
-
-        // Check if a directory has been selected
-        if (SelectedDirectory.IsEmpty()) {
-             // Open the directory selection dialog
-            BFilePanel* filePanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), nullptr, B_DIRECTORY_NODE, false);
-            filePanel->Show();
-            break; // Exit to allow user to select a directory
-        }
-
-        bool isScanning = true; // Update the scanning flag
-        NormalScan(SelectedDirectory.String(), processedFiles); // Start normal scan
-
-        // Reset alert shown flag if scan is successful
-        fAlertShown = false;
-        break;
+        // Always open the directory selection dialog
+        OpenDirectorySelectionPanel();
+        break; // Exit to allow user to select a directory
     }
 
     case kMsgStopScan: {
@@ -446,28 +433,10 @@ void MainWindow::MessageReceived(BMessage* message)
     }
 }
 
-void MainWindow::DirectorySelected(BMessage* message) {
-    entry_ref dirRef;
-    if (message->FindRef("refs", &dirRef) == B_OK) {
-        BEntry entry(&dirRef);
-        if (entry.InitCheck() == B_OK) {
-            // Create a BDirectory from the BEntry
-            BDirectory dir(&entry);
-            if (dir.InitCheck() == B_OK) {
-                // Store the selected directory path
-                BPath path;
-                if (entry.GetPath(&path) == B_OK) {
-                    SelectedDirectory = path.Path(); // Store the selected directory path as a string
-                }
-            } else {
-                printf("Error initializing BDirectory\n");
-            }
-        } else {
-            printf("Error initializing BEntry\n");
-        }
-    } else {
-        printf("No entry_ref found in message\n");
-    }
+void MainWindow::OpenDirectorySelectionPanel() {
+    BFilePanel* filePanel = new BFilePanel(B_OPEN_PANEL, new BMessenger(this), nullptr, B_DIRECTORY_NODE, false);
+    filePanel->SetTarget(this); // Ensure the target is set to this instance
+    filePanel->Show();
 }
 
 void MainWindow::StartMonitoring()
@@ -637,20 +606,36 @@ void MainWindow::ChangeMonitorDirectory()
     fSelectPanel->Show();
 }
 
-void MainWindow::RefsReceived(BMessage* message)
-{
+void MainWindow::RefsReceived(BMessage* message) {
     entry_ref ref;
     if (message->FindRef("refs", &ref) == B_OK) {
         BPath path(&ref);
-        
-        // Update the configuration with the selected path
-        UpdateConfigFile(path);
+        fSelectedPath = path.Path(); // Store the selected path
 
-        // Show an alert to confirm the directory change
-        BAlert* alert = new BAlert("Directory Changed",
-                                   "The monitoring directory has been updated.",
-                                   "OK", NULL, NULL, B_WIDTH_AS_USUAL, B_INFO_ALERT);
-        alert->Go();
+        // Ask the user which directory they want to update
+        BAlert* alert = new BAlert("Select Action",
+                                   "What thing did you selected?",
+                                   "Monitor Directory", "Start Scan", NULL, B_WIDTH_AS_USUAL, B_INFO_ALERT);
+        alert->SetTarget(this); // Set the target to this instance
+        alert->Go(); // Wait for the user to make a selection
+
+        // Handle the user's selection
+        if (alert->ButtonIndex() == 0) { // "Monitor Directory" selected
+            SelectedDirectory = fSelectedPath; // Update the monitored directory
+            UpdateConfigFile(path); // Update configuration
+
+            BAlert* confirmAlert = new BAlert("Directory Updated",
+                                              "The monitoring directory has been updated.",
+                                              "OK");
+            confirmAlert->Go();
+        } else if (alert->ButtonIndex() == 1) { // "Scan Directory" selected
+            ScanDirectory = fSelectedPath; // Update the scan directory
+
+            BAlert* confirmAlert = new BAlert("Directory Updated",
+                                              "The scan directory has been updated.",
+                                              "OK");
+            confirmAlert->Go();
+        }
     }
 }
 
