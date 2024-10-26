@@ -532,7 +532,7 @@ void MainWindow::StartClamAVMonitoring()
     BAlert* alert = new BAlert("Automatic Quarantine",
                                 "Please note that there is an automatic quarantine mechanism in place. "
                                 "Ensure that you start both the YARA and ClamAV engines before continuing.",
-                                "OK", "Cancel", B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+                                "OK", "Cancel", nullptr, B_WIDTH_AS_USUAL, B_WARNING_ALERT);
     
     if (alert->Go() == 0) {
         // User clicked OK
